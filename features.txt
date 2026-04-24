@@ -1,0 +1,458 @@
+
+
+🚀 AI-Powered Recruitment Platform — Complete Feature List
+(Full & Final — Non-Technical Language)
+
+👥 PART 1: USER ROLES & ACCESS
+1.1 Three Types of Users
+Admin Platform এর সর্বোচ্চ ক্ষমতাসম্পন্ন ব্যক্তি। সব কিছু দেখতে পারে, সব কিছু control করতে পারে। Recruiter approve করে, Faculty approve করে, platform এর সব settings manage করে।
+Recruiter কোম্পানির HR বা hiring manager। Job post করে, candidate দেখে, hiring process manage করে। Admin তাকে access দেয়।
+Candidate যে চাকরি খুঁজছে। Job দেখে, apply করে, নিজের application status track করে।
+Faculty (Technical Interviewer) বাংলাদেশের বিভিন্ন কোম্পানির senior professional যারা platform এ register করে technical interview নেয় এবং per interview fee পায়।
+
+1.2 Registration & Login System
+যেকেউ Candidate হিসেবে register করতে পারবে
+Recruiter হতে হলে Admin এর approval লাগবে
+Faculty হতে হলে application দিতে হবে, Admin verify করে approve করবে
+Login করলে system নিজেই বুঝবে সে কোন role — সেই অনুযায়ী dashboard দেখাবে
+Email verify করতে হবে register করার পর
+Password ভুললে email এ reset link পাবে
+
+💼 PART 2: JOB POSTING SYSTEM
+2.1 Job Post তৈরি করা
+Recruiter একটা job post তৈরি করবে যেখানে থাকবে:
+Job title (e.g. "Senior Software Engineer")
+Department (e.g. Engineering, Marketing)
+Job type (Full-time, Part-time, Contract, Remote, Hybrid, Onsite)
+Location
+Salary range
+Required skills (tags হিসেবে, e.g. Python, React, SQL)
+Experience level (Junior, Mid, Senior)
+Job description (বিস্তারিত কাজের বিবরণ)
+Application deadline
+কতজন hire করবে
+2.2 AI Job Description Assistant
+Recruiter শুধু job title আর skills লিখবে — AI বাকি job description লিখে দেবে। Recruiter চাইলে edit করতে পারবে। এতে সময় বাঁচবে এবং professional description তৈরি হবে।
+2.3 Job Status Management
+Draft — এখনো publish করেনি, কাজ চলছে
+Published — সবাই দেখতে পাচ্ছে, apply করতে পারছে
+Paused — সাময়িক বন্ধ, নতুন application নেওয়া হচ্ছে না
+Closed — hiring শেষ
+2.4 Job Board (Candidate এর জন্য)
+সব published job একটা সুন্দর list এ দেখাবে
+Search করা যাবে (job title, company, skill দিয়ে)
+Filter করা যাবে (location, job type, experience level, salary range)
+প্রতিটা job এ click করলে full details দেখাবে
+"Apply Now" button থাকবে
+
+📄 PART 3: CV / RESUME SYSTEM
+3.1 CV Upload
+Candidate apply করার সময় CV upload করবে (PDF বা Word)
+System automatically CV এর ভেতর থেকে পড়বে:
+নাম, email, phone number
+Skills এর list
+কত বছরের experience, কোন কোন কোম্পানিতে কাজ করেছে
+Educational qualification
+Certifications
+3.2 Candidate Profile Auto-Build
+CV upload করলে system automatically candidate এর profile তৈরি করে দেবে। Candidate চাইলে manually edit করতে পারবে। পরের বার apply করতে এই profile use হবে — আবার CV upload লাগবে না।
+
+🤖 PART 4: AI MATCH SCORING & AUTO FILTER
+4.1 AI Match Scoring
+প্রতিটা candidate যখন apply করে, AI তখনই তার CV এর সাথে job এর requirements মিলিয়ে একটা score দেয় (0% থেকে 100%)।
+উদাহরণ:
+Job চাইছে: Python, Django, SQL, 3 বছর experience
+Candidate এর আছে: Python, Django, MongoDB, 2 বছর experience
+AI Score: 72%
+
+এই score recruiter কে দেখায় — কাকে আগে দেখবে সেটা বুঝতে সাহায্য করে।
+4.2 Auto Threshold Filter
+Recruiter job post করার সময় একটা minimum score set করবে (e.g. 70%)।
+Score 70% বা তার উপরে → Automatically hiring pipeline এ যাবে
+Score 70% এর নিচে → "Hidden Pool" এ চলে যাবে
+Hidden Pool কী? Reject হয়ে যাওয়া candidates delete হবে না। "Hidden Pool" এ থাকবে। Recruiter চাইলে পরে এই pool থেকে manually দেখতে পারবে। কারণ AI ভুলও করতে পারে — কোনো ভালো candidate যেন হারিয়ে না যায়।
+4.3 Candidate Ranking
+Pipeline এ আসা সব candidates তাদের AI score অনুযায়ী rank করা থাকবে। সবচেয়ে বেশি match যে, সে সবার উপরে।
+
+🔄 PART 5: HIRING PIPELINE & CANDIDATE TRACKING
+5.1 Hiring Stages
+প্রতিটা job এর জন্য candidates এই stages এর মধ্য দিয়ে যাবে:
+CV Shortlisted → MCQ Round → Coding Round → Technical Round → HR Round → Hired
+
+যেকোনো stage থেকে candidate কে "Rejected" করা যাবে।
+5.2 Kanban Board View
+Recruiter একটা visual board দেখবে — অনেকটা Trello এর মতো। প্রতিটা column একটা stage। Candidate এর card drag করে পরের stage এ নিয়ে যাওয়া যাবে। Card এ দেখাবে candidate এর নাম, AI score, apply করার তারিখ।
+5.3 List View
+যারা table/spreadsheet style পছন্দ করে তাদের জন্য list view। সব candidates এক সারিতে দেখাবে সব information সহ।
+5.4 Recruiter Notes
+প্রতিটা candidate এর card এ recruiter notes লিখতে পারবে। এই notes শুধু recruiter দেখতে পাবে, candidate দেখতে পাবে না।
+5.5 Candidate Scorecard
+প্রতিটা candidate এর একটা full scorecard থাকবে:
+CV Match Score:     85% ✅
+MCQ Round:          78% ✅
+Coding Round:       60% ✅
+Technical Round:    Pass ✅
+Integrity Score:    High ✅
+Overall Verdict:    Strong Hire 🟢
+
+
+📝 PART 6: MCQ ROUND SYSTEM
+6.1 Question Bank
+Recruiter আগে থেকে questions তৈরি করে bank এ রাখবে।
+Multiple choice questions
+True/False questions
+প্রতিটা question এ difficulty level থাকবে (Easy, Medium, Hard)
+Skill/topic অনুযায়ী categorize থাকবে
+AI দিয়ে auto-generate করা যাবে — job description দিলে AI relevant questions বানিয়ে দেবে
+6.2 MCQ Round Setup
+Recruiter MCQ round configure করবে:
+কতটা question থাকবে
+Time limit কত (e.g. 30 minutes)
+Pass করতে কত % লাগবে (e.g. 60%)
+কোন question bank থেকে নেবে
+6.3 Candidate MCQ Experience
+Candidate invite email পাবে → Link এ click করবে
+↓
+নির্দিষ্ট সময়ে test শুরু হবে
+↓
+Timer চলতে থাকবে screen এ
+↓
+Questions randomly সাজানো থাকবে (সবার আলাদা order)
+↓
+Time শেষ হলে automatically submit হয়ে যাবে
+↓
+Instant result দেখাবে — pass নাকি fail
+
+6.4 Anti-Cheat System (MCQ)
+অন্য tab এ গেলে warning আসবে — ৩ বার গেলে automatic submit
+Copy-paste কাজ করবে না
+Full screen mode enforce হবে — বের হলে warning
+প্রতিটা candidate এর জন্য question order আলাদা
+System record রাখবে কতবার tab switch হয়েছে
+
+💻 PART 7: LIVE CODING ROUND SYSTEM
+7.1 Coding Platform
+Platform এর ভেতরেই একটা পূর্ণাঙ্গ coding environment থাকবে। Candidate বাইরে কোথাও না গিয়ে সরাসরি এখানে code করবে। VS Code এর মতো editor থাকবে। 40+ programming language support করবে (Python, Java, JavaScript, C++, etc.)।
+7.2 Problem Setup (Recruiter করবে)
+Recruiter coding problems তৈরি করবে:
+Problem statement (বিস্তারিত বর্ণনা)
+Sample input/output (example দেওয়া থাকবে)
+Hidden test cases (এগুলো দিয়ে score হবে, candidate দেখতে পাবে না)
+Time limit, memory limit
+Difficulty level
+Partial marking on/off (আংশিক সঠিক হলেও marks পাবে কিনা)
+7.3 Candidate Coding Experience
+Candidate coding round এ enter করে
+↓
+Problem দেখে, language select করে
+↓
+Code editor এ লেখে
+↓
+"Run" করলে → sample test cases এ চালিয়ে দেখতে পারে
+↓
+"Submit" করলে → সব hidden test cases এ run হয়
+↓
+Result: 4/5 test case pass → 80% score
+↓
+Partial marking: 3/5 pass → 60% score
+
+7.4 Proctoring System (Coding Round)
+এটা সবচেয়ে important — cheating রোধ করার জন্য:
+Camera ON — candidate এর মুখ দেখা যাবে সবসময়
+Screen Share ON — candidate এর screen recruiter দেখতে পাবে
+Tab Switch করা যাবে না — গেলে warning, বারবার গেলে disqualify
+Multiple Face Detection — camera তে একের বেশি মুখ দেখলে alert
+Face Missing Alert — candidate সরে গেলে সাথে সাথে flag
+Recruiter Live Monitor — recruiter চাইলে যেকোনো candidate এর screen ও camera live দেখতে পারবে
+7.5 Integrity Score
+প্রতিটা candidate এর জন্য একটা "Integrity Score" তৈরি হবে:
+কতবার tab switch করেছে
+Camera কতক্ষণ off ছিল
+Multiple face কতবার detect হয়েছে
+Face missing কতবার হয়েছে
+এই score recruiter দেখবে এবং সিদ্ধান্ত নিতে পারবে।
+
+🎙️ PART 8: TECHNICAL ROUND SYSTEM
+8.1 দুইটা Option
+Option A — Recruiter নিজে নেয়
+Recruiter নিজেই video call এ candidate এর technical interview নেবে। Platform এর ভেতরেই video call হবে। Interview শেষে recruiter প্রতিটা candidate এর score ও pass/fail দেবে। সব data system এ save হবে। Admin দেখতে পাবে।
+Option B — Platform এর Faculty নেয়
+Recruiter চাইলে নিজে না নিয়ে platform এর registered faculty দিয়ে technical interview করাতে পারবে। এতে recruiter এর সময় বাঁচবে এবং neutral evaluation হবে।
+
+8.2 Faculty System
+Faculty কারা? বাংলাদেশের বড় বড় tech কোম্পানির senior engineers, architects, team leads — যারা তাদের free time এ এই platform এ technical interview নেবে এবং প্রতিটা interview এর জন্য fee পাবে।
+Faculty Registration:
+Senior professional আবেদন করে
+↓
+Skills declare করে (Java, Python, QA, DevOps etc.)
+↓
+LinkedIn profile, current company, experience দেয়
+↓
+Admin verify করে approve করে
+↓
+Faculty তার available time slots দেয় (e.g. শনিবার ৩টা-৬টা)
+
+Faculty Assignment:
+Java developer এর job এ technical round আসলে
+↓
+System দেখে কোন Java faculty available আছে
+↓
+সেই faculty কে assign করে
+↓
+Admin schedule confirm করে
+↓
+Candidates কে email যায় — কখন, কোথায়, কীভাবে join করবে
+
+
+8.3 Video Interview Queue System
+Technical round এ একসাথে অনেক candidate থাকতে পারে। এদের একে একে নেওয়া হবে।
+10 জন candidate technical round এ আছে
+↓
+Faculty/Recruiter ready হলে → 1 নম্বর candidate কে notification + link যায়
+↓
+1 নম্বর join করে → Interview হয় → শেষ হয়
+↓
+Automatically 2 নম্বর candidate এর portal এ notification আসে link সহ
+↓
+এভাবে queue শেষ হয়
+↓
+বাকি সবাই waiting room এ থাকে — কত নম্বরে আছে দেখতে পাবে
+
+Video Call Features:
+Platform এর ভেতরেই হবে — বাইরের কোনো app লাগবে না
+Screen share করা যাবে (code দেখানোর জন্য)
+একসাথে শুধু একজন candidate ই call এ থাকতে পারবে
+Call record করার option (recruiter এর consent এ)
+
+8.4 Technical Round Result Handling
+Recruiter নিজে নিলে:
+প্রতিটা candidate এর জন্য score ও pass/fail দেবে
+↓
+System এ submit করবে
+↓
+Admin dashboard এ সব result দেখাবে
+↓
+Admin bulk email করবে সব candidate কে result জানাতে
+
+Faculty নিলে:
+Faculty প্রতিটা candidate এর জন্য score ও detailed feedback দেবে
+↓
+Pass/Fail mark করবে
+↓
+Admin confirm করবে
+↓
+Candidates কে result email যাবে
+↓
+Faculty এর earning calculate হবে
+
+
+8.5 Faculty Payment System
+Per interview একটা fixed fee থাকবে
+↓
+মাস শেষে system calculate করবে কতটা interview নিয়েছে
+↓
+Admin payment approve করবে
+↓
+Faculty তার dashboard এ earnings দেখতে পাবে
+   - এই মাসে কতটা interview নিয়েছে
+   - কত টাকা earned
+   - Payment status (pending / paid)
+
+8.6 Faculty Rating System
+প্রতিটা interview এর পর recruiter faculty কে rate করবে (1-5 star)
+↓
+ভালো rated faculty কে system বেশি assign করবে
+↓
+Consistently খারাপ faculty কে admin suspend করতে পারবে
+↓
+Faculty এর public profile এ average rating দেখাবে
+
+
+📧 PART 9: AUTOMATED NOTIFICATION SYSTEM
+প্রতিটা event এ automatic email/notification যাবে:
+Candidate পাবে:
+Application submit হলে — "আমরা তোমার application পেয়েছি"
+CV reject হলে (threshold এর নিচে) — "Thank you for applying"
+MCQ round এর invite
+MCQ result — pass/fail
+Coding round এর invite
+Coding round result
+Technical round এর schedule ও link
+Technical round result
+Final HR round এর invite (recruiter manually করবে)
+Hired হলে — Congratulations email
+যেকোনো stage এ rejected হলে — respectful rejection email
+Recruiter পাবে:
+নতুন application এলে
+High score candidate apply করলে (e.g. 90%+ match)
+কোনো round এর results ready হলে
+Technical round শেষ হলে
+Faculty পাবে:
+নতুন interview assign হলে
+Schedule confirm হলে
+Payment হলে
+
+📊 PART 10: ANALYTICS & REPORTING DASHBOARD
+10.1 Recruiter Analytics
+প্রতিটা job posting এর জন্য:
+Total Applications:        150
+CV Threshold Pass:          89 (59%)
+MCQ Round Pass:             45 (50%)
+Coding Round Pass:          20 (44%)
+Technical Round Pass:       10 (50%)
+Final HR:                    5
+Hired:                       3
+
+Average time to hire — কতদিনে process শেষ হচ্ছে।
+10.2 Admin Analytics
+Platform এ total jobs, candidates, recruiters
+কোন industry তে সবচেয়ে বেশি hiring হচ্ছে
+কোন skills সবচেয়ে বেশি demand এ
+Faculty performance report
+Monthly hiring trends
+10.3 Candidate Analytics
+কতটা job এ apply করেছে
+কোন skills এ gap আছে (AI suggest করবে)
+Profile completion percentage
+
+🔐 PART 11: SECURITY & DATA PROTECTION
+সব password encrypted — কেউ plain text দেখতে পারবে না
+প্রতিটা user শুধু তার নিজের data দেখতে পারবে
+Resume ও files secure cloud storage এ থাকবে
+Admin ছাড়া কেউ অন্যের data access করতে পারবে না
+Candidate এর personal data (phone, email) recruiter সরাসরি দেখতে পারবে না — শুধু platform এর ভেতরে communicate করতে পারবে
+
+📱 PART 12: DESIGN & EXPERIENCE
+সব device এ কাজ করবে — computer, tablet, mobile
+Fast loading — বড় candidate list ও দ্রুত load হবে
+Clean & Modern UI — দেখতে সুন্দর, ব্যবহার করতে সহজ
+Dark mode / Light mode option
+বাংলা ও English দুই ভাষায় interface (optional future feature)
+Onboarding Guide — নতুন recruiter login করলে step-by-step guide দেখাবে কীভাবে শুরু করবে
+
+🗂️ COMPLETE FEATURE SUMMARY TABLE
+#
+Feature
+কার জন্য
+1
+Multi-role login system
+সবার
+2
+AI job description writer
+Recruiter
+3
+Job posting & management
+Recruiter
+4
+Public job board with search/filter
+Candidate
+5
+CV upload & AI parsing
+Candidate
+6
+Auto profile builder from CV
+Candidate
+7
+AI match scoring (0-100%)
+System
+8
+Auto threshold filter + Hidden Pool
+Recruiter
+9
+Candidate ranking by score
+Recruiter
+10
+Kanban board pipeline
+Recruiter
+11
+List view pipeline
+Recruiter
+12
+Recruiter notes per candidate
+Recruiter
+13
+Candidate scorecard
+Recruiter/Admin
+14
+MCQ question bank + AI generate
+Recruiter
+15
+Live MCQ round with timer
+Candidate
+16
+MCQ anti-cheat system
+System
+17
+Built-in coding platform
+Candidate
+18
+Live coding with Judge0 (40+ languages)
+Candidate
+19
+Partial marking for coding
+System
+20
+Camera + screen proctoring
+System
+21
+Multiple face detection
+System
+22
+Integrity score per candidate
+System
+23
+Recruiter live monitor
+Recruiter
+24
+Technical round video call (in-platform)
+Faculty/Recruiter
+25
+Interview queue system
+System
+26
+Faculty registration & approval
+Admin
+27
+Faculty skill-based assignment
+System
+28
+Faculty availability scheduling
+Faculty
+29
+Faculty rating system
+Recruiter
+30
+Faculty payment & earnings dashboard
+Faculty/Admin
+31
+Automated email notifications
+System
+32
+Bulk result email by admin
+Admin
+33
+Hiring funnel analytics
+Recruiter/Admin
+34
+Recruiter productivity insights
+Admin
+35
+Candidate skill gap suggestions
+Candidate
+36
+Secure data & file storage
+System
+37
+Role-based access control
+System
+38
+Mobile-responsive design
+সবার
+39
+Dark/Light mode
+সবার
+40
+New recruiter onboarding guide
+Recruiter
+
+

@@ -1,0 +1,461 @@
+# IMPLEMENTATIONS
+
+## Project Scope Lock (Final)
+এই ডকুমেন্টে শুধু নিচের 10টা feature থাকবে:
+1. Multi-Role System + Secure Authentication
+2. Smart Job Posting
+3. Public Job Board
+4. Candidate Application Flow + CV Upload
+5. AI Resume Parsing
+6. AI Match Scoring + Ranking
+7. Hiring Pipeline (Review, Interview, Offer, Hired, Rejected)
+8. Kanban + List Candidate Tracking + Advanced Search/Filters
+9. Automated Email Alerts + In-App Notifications
+10. Recruiter/Admin Analytics Dashboard
+
+Out of scope (এই ডকুমেন্টে intentionally বাদ):
+- MCQ
+- Coding platform
+- Video interview/call
+
+---
+
+## 1) Inconsistency Fixes (Resolved With Justification)
+
+### 1. Refresh token 7d vs Remember me 30d
+Final rule:
+- Access token: 15 minutes
+- Refresh token (default): 7 days
+- Remember me on হলে refresh token TTL: 30 days
+- Absolute max session lifetime: 30 days
+Justification:
+- Security + usability দুইটাই balance হয়
+- Recruiter বারবার login করতে হয় না, আবার indefinite sessionও থাকে না
+
+### 2. Job Type vs Remote/Hybrid/Onsite mix
+Final rule:
+- jobType: Full-time, Part-time, Contract, Internship
+- workplaceType: Onsite, Hybrid, Remote
+Justification:
+- Industry standard data model
+- Filtering accurate হয়
+
+### 3. Hidden Pool + Auto rejection email conflict
+Final rule:
+- Hidden Pool এ গেলে rejection email যাবে না
+- শুধু "Under review" বা "Application received" status থাকবে
+- Final rejection action trigger হলে rejection email যাবে
+Justification:
+- পরে recover করলে trust break হয় না
+- Candidate experience clean থাকে
+
+### 4. Identity masking vs recruiter email search
+Final rule:
+- Recruiter search করতে পারবে: aliasId, skills, score, stage, experience
+- Recruiter email/phone search করতে পারবে না
+- Admin প্রয়োজন হলে full PII search করতে পারবে
+Justification:
+- Data privacy policy enforce হয়
+- Masking শুধু UI-level না, API-level হয়
+
+### 5. Recruiter invite-only + Google OAuth undefined
+Final rule:
+- Candidate: email/password বা Google OAuth
+- Recruiter: invite-only, invited email দিয়েই OAuth allow
+- Admin: seeded account + controlled creation
+Justification:
+- Unauthorized recruiter sign-up বন্ধ থাকে
+- OAuth UX benefits পাওয়া যায়
+
+### 6. Review vs Shortlisted naming mismatch
+Final rule:
+- Canonical stage IDs: REVIEW, INTERVIEW, OFFER, HIRED, REJECTED
+- UI label হিসেবে "Shortlisted" optional alias, internal ID change হবে না
+Justification:
+- API, analytics, automation stable থাকে
+
+### 7. Transactional email এ unsubscribe
+Final rule:
+- Transactional emails: no unsubscribe link
+- Optional emails (daily digest, product tips): unsubscribe link mandatory
+Justification:
+- Compliance ঠিক থাকে
+- Critical workflow mails accidentally বন্ধ হয় না
+
+### 8. Custom scoring weights vs comparability
+Final rule:
+- Job publish হওয়ার আগে recruiter weights set করতে পারবে
+- First application আসার পর scoringConfig lock হবে
+- Change দরকার হলে scoringVersion++ (v2) with explicit recalc action
+Justification:
+- Historical scores comparable থাকে
+- Auditability improve হয়
+
+### 9. Real-time update conflict handling missing
+Final rule:
+- Application document এ version field থাকবে
+- Stage move API optimistic concurrency check করবে
+- Conflict হলে 409 + refresh prompt
+Justification:
+- দুই recruiter একসাথে move করলে data overwrite হয় না
+
+### 10. OpenAI-only parsing vs free-first requirement
+Final rule:
+- Provider abstraction mandatory
+- Primary: Gemini Flash free tier বা Groq free tier
+- Fallback: rule-based parser + manual correction
+Justification:
+- Free-first requirement maintain হয়
+- API outage হলেও workflow বন্ধ হয় না
+
+---
+
+## 2) Best Tech Stack (This Scope-এর জন্য)
+
+### Frontend
+- React + Vite + TypeScript
+- Tailwind CSS + shadcn/ui
+- React Router
+- TanStack Query
+- React Hook Form + Zod
+- TanStack Table
+- dnd-kit (Kanban)
+- Recharts (Analytics)
+
+Why:
+- Fast dev speed + enterprise-grade UI + predictable state management
+
+### Backend (MVC)
+- Node.js + Express + TypeScript
+- Mongoose (MongoDB)
+- JWT + HttpOnly cookies
+- Passport (Google OAuth)
+- BullMQ (notifications/async jobs)
+- Socket.IO (live updates in pipeline)
+- Pino logger
+
+Why:
+- তোমার required features-এর জন্য mature এবং solo-dev friendly
+
+### Database/Infra
+- MongoDB Atlas (primary DB)
+- Redis (queue + realtime assist)
+- Cloudinary বা S3-compatible storage (CV files)
+
+Why:
+- একটাই main DB দিয়ে কাজ হবে, supporting services শুধু operational need মেটাবে
+
+### AI/Parsing
+- pdf-parse + mammoth (text extraction)
+- Gemini Flash free tier or Groq free tier (structured parsing)
+- Rule-based fallback parser
+
+Why:
+- Free-first + reliability
+
+### Email/Notification
+- Brevo free tier বা Resend free tier
+- React Email templates
+- BullMQ queue + retry + dead-letter policy
+
+### Security
+- Helmet
+- CORS allowlist
+- Rate limiting
+- Brute-force guard
+- CSRF protection
+- Argon2 password hashing
+- Audit logs for critical actions
+
+---
+
+## 3) Simple But Practical DB Design (Role-based merge করা final)
+
+1. users
+- identity, role, auth status, verify status
+
+2. recruiter_invites
+- invitedEmail, invitedBy, tokenHash, expiresAt, acceptedAt
+
+3. jobs
+- job details, jobType, workplaceType, scoringConfig, threshold, status
+
+4. candidate_profiles
+- parsed profile + manual edits
+
+5. resumes
+- file metadata, parsing status, parse result, provider info
+
+6. applications
+- jobId, candidateId, aliasId, currentStage, stageHistory, scoreSummary, hiddenPoolFlag, version
+
+7. notifications
+- in-app events + email dispatch state
+
+8. email_templates
+- customizable optional templates
+
+9. activity_logs
+- auth events, stage move, admin actions, scoring recalcs
+
+10. analytics_events (বা aggregation-first approach)
+- dashboard metrics build করতে event trail
+
+Note:
+- Over-optimization করো না
+- Phase-1 এ কম index, Phase-2 এ query profiling দেখে add করো
+
+---
+
+## 4) MVC Module Breakdown
+
+### Models
+- User
+- RecruiterInvite
+- Job
+- CandidateProfile
+- Resume
+- Application
+- Notification
+- ActivityLog
+
+### Controllers
+- AuthController
+- AdminController
+- JobController
+- ApplicationController
+- ParsingController
+- ScoringController
+- PipelineController
+- NotificationController
+- AnalyticsController
+
+### Services
+- TokenService
+- InviteService
+- ResumeParsingService
+- MatchScoringService
+- NotificationService
+- EmailService
+- StageTransitionService
+- SearchService
+
+### Routes
+- /auth
+- /admin
+- /jobs
+- /applications
+- /pipeline
+- /notifications
+- /analytics
+
+---
+
+## 5) Serial Implementation Plan (Exactly কোনটা আগে)
+
+## Phase 0: Foundation
+Build:
+1. Monorepo বা two-repo setup (frontend/backend)
+2. MVC skeleton
+3. Env/config management
+4. Error handler + logger
+5. Base UI shell (Candidate/Recruiter/Admin)
+
+Output:
+- Secure project foundation ready
+
+## Phase 1: Multi-Role Auth + Invite Flow
+Build:
+1. Candidate sign-up + email verification
+2. Super admin seed
+3. Recruiter invite create/accept flow
+4. Login + refresh + remember me
+5. Google OAuth rules (candidate open, recruiter invite-bound)
+
+Flow:
+- Candidate register -> verify -> login -> dashboard
+- Admin invite recruiter -> recruiter sets password/OAuth -> recruiter dashboard
+
+Output:
+- Role-safe access working end-to-end
+
+## Phase 2: Smart Job Posting
+Build:
+1. Multi-step job form
+2. Draft autosave
+3. AI suggestion hooks (skills/description)
+4. Preview + publish/pause/close
+5. jobType/workplaceType split
+
+Flow:
+- Recruiter draft করে -> AI assist নেয় -> preview -> publish
+
+Output:
+- Production-style job publishing lifecycle
+
+## Phase 3: Public Job Board
+Build:
+1. Public listing page
+2. Debounced keyword search
+3. URL-synced filters
+4. Numbered pagination
+5. Job details split view
+6. Login redirect-back on apply
+
+Flow:
+- Candidate search/filter -> details -> apply click -> auth gate -> back to same job
+
+Output:
+- Candidate discovery flow complete
+
+## Phase 4: Application + CV Upload
+Build:
+1. Apply form with saved profile / new CV option
+2. Presigned upload flow + progress bar
+3. Duplicate application guard (unique job+candidate)
+4. Deadline-based apply disable
+
+Flow:
+- CV upload -> form fill -> submit -> confirmation + email
+
+Output:
+- Reliable application intake
+
+## Phase 5: AI Resume Parsing
+Build:
+1. Async parse job trigger
+2. Provider abstraction (free-first)
+3. Parsed data save to profile
+4. Confidence score
+5. Manual correction fallback
+6. Re-parse on new CV
+
+Flow:
+- Upload complete -> parse queue -> profile autofill -> candidate confirm
+
+Output:
+- Resume intelligence stable
+
+## Phase 6: Match Scoring + Ranking + Hidden Pool
+Build:
+1. Scoring formula engine
+2. Score breakdown API
+3. Job threshold filter
+4. Hidden Pool soft-state
+5. Recover to pipeline action
+6. scoringVersion lock after first application
+
+Flow:
+- Profile + job requirements compare -> score -> rank -> threshold action
+
+Output:
+- Prioritized candidate list with explainability
+
+## Phase 7: Pipeline (Kanban + List)
+Build:
+1. Canonical stage machine (REVIEW, INTERVIEW, OFFER, HIRED, REJECTED)
+2. Kanban drag-drop
+3. List table + bulk actions
+4. Stage move logs + notification triggers
+5. Optimistic concurrency conflict handling
+6. Realtime sync via Socket.IO
+
+Flow:
+- Recruiter move candidate -> stage update -> auto notification -> analytics update
+
+Output:
+- Core ATS workflow operational
+
+## Phase 8: Advanced Search/Filter
+Build:
+1. Search by alias, skills, stage, score, experience
+2. Saved filters
+3. Sort + pagination consistency
+4. Email/phone search disabled for recruiter
+
+Flow:
+- Recruiter apply filters -> save named view -> reuse/share
+
+Output:
+- Fast and privacy-safe candidate discovery
+
+## Phase 9: Notifications (Email + In-App)
+Build:
+1. Event-driven notification map
+2. Transactional vs optional classification
+3. Queue + retry + idempotency key
+4. Template rendering
+
+Flow:
+- Event ঘটে -> queue job -> send -> delivery status track
+
+Output:
+- Reliable communication layer
+
+## Phase 10: Analytics Dashboard
+Build:
+1. Recruiter funnel metrics
+2. Admin platform metrics
+3. KPI definition lock
+4. Date range filter
+5. Export CSV/XLSX
+
+Flow:
+- Event data aggregate -> chart render -> drill-down details
+
+Output:
+- Decision-ready dashboards
+
+## Phase 11: Security Hardening + Release
+Build:
+1. Permission audit
+2. Sensitive field masking tests
+3. Token/session abuse tests
+4. Performance pass (page <2s লক্ষ্য)
+5. Production deployment
+
+Output:
+- Industry-standard launch readiness
+
+---
+
+## 6) Feature Flow (End-to-End)
+
+### Candidate Flow
+1. Register/verify/login
+2. Public board এ job খুঁজে apply
+3. CV upload + parsing
+4. Application status/notifications পায়
+
+### Recruiter Flow
+1. Invite accept করে login
+2. Job publish করে
+3. Scored candidate list দেখে
+4. Kanban/List থেকে stage move করে
+5. Filter/search দিয়ে shortlist refine করে
+
+### Admin Flow
+1. Recruiter invitation/control
+2. Template and policy manage
+3. Platform metrics monitor
+4. Audit logs review
+
+---
+
+## 7) Launch Checklist (Must Pass)
+1. Unauthorized role access blocked
+2. Recruiter signup invite ছাড়া সম্ভব না
+3. Duplicate application blocked
+4. Hidden Pool candidate recover করা যায়
+5. Stage transition invalid হলে reject হয়
+6. Realtime conflict এ 409 আসে
+7. Candidate PII recruiter API response এ expose হয় না
+8. Notification retry works
+9. Dashboard numbers recruiter/admin এ consistent
+10. All critical events activity_logs এ traceable
+
+---
+
+## Final Guidance
+এই implementation plan intentionally practical, over-optimized না, কিন্তু feature-complete এবং industry-standard launch-এর জন্য যথেষ্ট strong।
+সব phase serially follow করলে rework কম হবে, stability বেশি হবে।

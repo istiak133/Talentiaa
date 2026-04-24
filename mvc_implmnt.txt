@@ -1,0 +1,585 @@
+# 🔍 Priority Features — Complete Flow & Implementation Guide
+
+---
+
+## 1. MULTI-ROLE SYSTEM & SECURE AUTHENTICATION
+
+### কীভাবে কাজ করে?
+
+**Candidate এর অভিজ্ঞতা:**
+```
+Website এ আসে → "Sign Up" click করে
+↓
+নাম, email, password দেয়
+↓
+"I'm looking for a job" select করে
+↓
+Email এ verification link আসে
+↓
+Verify করে → Candidate dashboard এ যায়
+```
+
+**Recruiter এর অভিজ্ঞতা:**
+
+Admin তাকে invite করে email এ
+↓
+Recruiter সেই link এ click করে
+↓
+Password set করে → Login করে
+↓
+Recruiter dashboard এ যায়
+```
+
+**Admin এর অভিজ্ঞতা:**
+```
+System এ already একটা super admin account থাকবে
+↓
+Admin login করে সব control করে
+↓
+নতুন recruiter invite করতে পারে
+↓
+Platform এর সব activity দেখতে পারে
+```
+
+### Industry Standard Implementation:
+
+এখানে সবচেয়ে important হলো **security এবং session management।**
+
+**যা যা থাকবে:**
+- Email + Password login
+- Google OAuth (one-click login — user experience অনেক ভালো হয়)
+- JWT Access Token (15 minutes valid) + Refresh Token (7 days valid)
+- Refresh token rotate হবে — মানে প্রতিবার নতুন token issue হবে
+- Login করলে device remember করার option ("Remember me for 30 days")
+- Suspicious login detect হলে email alert যাবে
+
+**কেন এভাবে করলে better:**
+Recruiter সারাদিন platform use করে। বারবার login করতে হলে বিরক্ত হবে। Refresh token system থাকলে একবার login করলে দীর্ঘদিন logged in থাকবে — কিন্তু security compromise হবে না।
+
+---
+
+## 2. SMART JOB POSTING
+
+### Recruiter এর অভিজ্ঞতা:
+
+```
+Dashboard থেকে "Post New Job" click করে
+↓
+Step 1: Basic Info
+   - Job Title type করে
+   - AI suggest করে: "এই title এর জন্য সাধারণত এই skills লাগে"
+   - Recruiter accept বা ignore করতে পারে
+
+Step 2: Job Details
+   - Department select করে
+   - Job Type (Full-time/Part-time/Remote/Hybrid/Onsite)
+   - Location
+   - Salary Range (show/hide option আছে)
+   - Experience Level (Junior/Mid/Senior/Lead)
+
+Step 3: Requirements
+   - Required Skills (tags হিসেবে add করে)
+   - "Generate with AI" button — job title দিলে AI পুরো description লিখে দেয়
+   - Recruiter edit করতে পারে
+
+Step 4: Pipeline Setup
+   - AI Match Threshold set করে (e.g. 70%)
+   - Application deadline দেয়
+   - কতজন hire করবে
+
+Step 5: Preview & Publish
+   - Candidate কে যেমন দেখাবে সেভাবে preview
+   - "Save as Draft" অথবা "Publish Now"
+```
+
+### Candidate এর অভিজ্ঞতা:
+
+Job Board এ দেখবে:
+- Job title, company name, location, salary (যদি show করা থাকে)
+- Required skills (chips/tags হিসেবে)
+- "Posted 2 days ago" — relative time
+- Match percentage (যদি logged in থাকে এবং CV upload করা থাকে)
+
+### Industry Standard Implementation:
+
+**Job post এর জন্য যা করলে UX best হবে:**
+
+Multi-step form ব্যবহার করতে হবে — একটা বড় form না দিয়ে ছোট ছোট steps এ ভাগ করতে হবে। প্রতিটা step save হবে automatically — recruiter browser বন্ধ করলেও draft হারাবে না। AI description generator রাখতে হবে — recruiter এর সময় বাঁচাবে এবং professional job post তৈরি হবে।
+
+---
+
+## 3. PUBLIC JOB BOARD
+
+### Candidate এর অভিজ্ঞতা:
+
+```
+Landing page তে job search box থাকবে
+↓
+Keyword লেখে (e.g. "React Developer")
+↓
+Job list দেখায় instantly (real-time search)
+↓
+Left side এ filters:
+   - Job Type
+   - Location
+   - Experience Level
+   - Salary Range (slider)
+   - Skills
+↓
+প্রতিটা job card এ:
+   - Job title
+   - Company name
+   - Location
+   - Key skills (top 3-4 টা)
+   - Salary range
+   - Posted কতদিন আগে
+   - Match % (logged in user এর জন্য)
+↓
+Job card click করলে → right side এ details দেখায়
+(Page reload হবে না — split view)
+↓
+"Apply Now" button
+```
+
+**Logged in না থাকলে:**
+Apply click করলে → Login/Register page এ যাবে → Login করলে আবার সেই job এ ফিরে আসবে (redirect)
+
+### Industry Standard Implementation:
+
+**Search এর জন্য:**
+User type করার সাথে সাথে results update হবে (debounced search — 300ms delay দিয়ে, নইলে প্রতিটা keystroke এ server request যাবে)।
+
+**Filter এর জন্য:**
+Filter apply করলে URL update হবে — মানে candidate filter করা page টা কাউকে share করতে পারবে বা bookmark করতে পারবে। এটা অনেক কাজের feature।
+
+**Pagination:**
+Infinite scroll নয় — numbered pagination ভালো। কারণ candidate specific page এ ফিরে আসতে পারবে।
+
+---
+
+## 4. CANDIDATE APPLICATION FLOW + CV UPLOAD
+
+### Candidate এর অভিজ্ঞতা:
+
+```
+"Apply Now" click করে
+↓
+যদি আগে CV upload করা থাকে:
+   "Apply with saved profile?" → One-click apply
+   অথবা "Upload new CV"
+
+যদি নতুন হয়:
+   Step 1: CV Upload (PDF/DOC — drag & drop)
+   Step 2: Basic Info confirm (CV থেকে auto-fill হয়ে যাবে)
+            - নাম, email, phone
+            - LinkedIn profile (optional)
+            - Portfolio/GitHub (optional)
+   Step 3: Cover Letter (optional — rich text editor)
+   Step 4: Review & Submit
+↓
+Submit করলে:
+   - Screen এ "Application Submitted!" confirmation
+   - Email যায় — application details সহ
+   - Candidate dashboard এ application দেখা যায়
+```
+
+### CV Upload এর Technical Flow:
+
+```
+Candidate CV drag করে drop করে
+↓
+File instantly upload হয় cloud এ (progress bar দেখায়)
+↓
+Background এ AI parsing শুরু হয়
+↓
+Parsing শেষ হলে form এ auto-fill হয়
+↓
+Candidate দেখে — ঠিক আছে কিনা confirm করে
+↓
+Submit
+```
+
+**Important UX Detail:**
+CV upload হওয়ার সময় candidate অপেক্ষা করবে না — upload চলতে থাকবে background এ, candidate বাকি form fill করবে। দুটো কাজ একসাথে হবে।
+
+### Industry Standard Implementation:
+
+**File Upload:**
+Direct browser থেকে cloud storage এ upload হবে (presigned URL দিয়ে) — server এর উপর load পড়বে না।
+
+**Duplicate Application Prevention:**
+একই job এ দুইবার apply করা যাবে না। "Apply Now" button এর জায়গায় "Already Applied" দেখাবে।
+
+**Application Deadline:**
+Deadline পার হয়ে গেলে "Apply Now" button automatically disable হয়ে যাবে।
+
+---
+
+## 5. AI RESUME PARSING
+
+### কীভাবে কাজ করে — পুরো flow:
+
+```
+CV upload হলো
+↓
+System PDF থেকে raw text বের করে
+↓
+AI এই text পড়ে structured data বানায়:
+
+{
+  name: "Rahim Ahmed",
+  email: "rahim@email.com",
+  phone: "017XXXXXXXX",
+  skills: ["React", "Node.js", "MongoDB", "Python"],
+  experience: [
+    {
+      company: "Tech BD",
+      role: "Software Engineer",
+      duration: "2 years 3 months",
+      from: "2022-01",
+      to: "2024-03"
+    }
+  ],
+  education: [
+    {
+      degree: "BSc in CSE",
+      university: "BUET",
+      year: "2021"
+    }
+  ],
+  total_experience_years: 2.3,
+  certifications: ["AWS Certified"]
+}
+↓
+এই data database এ save হয়
+↓
+Match Scoring engine এ যায়
+```
+
+### Recruiter এর অভিজ্ঞতা:
+
+Recruiter প্রতিটা candidate এর profile এ দেখবে:
+- Parsed skills chips হিসেবে (color coded — matched skills green, missing skills grey)
+- Experience timeline
+- Education
+- AI এর confidence score — "AI is 92% confident about this parsing"
+
+**কেন confidence score দরকার:**
+AI সবসময় perfect না। Recruiter কে জানাতে হবে যে parsing কতটা reliable। Low confidence হলে recruiter নিজে CV দেখবে।
+
+### Industry Standard Implementation:
+
+**Parsing এর জন্য best approach:**
+OpenAI GPT-4o API use করবে। Prompt engineering করে CV text দেবে, structured JSON response নেবে। এটা সবচেয়ে accurate approach।
+
+**Fallback System:**
+AI fail করলে (network issue, API down) — candidate manually তার skills enter করতে পারবে। System কখনো completely broken হবে না।
+
+**Re-parsing Option:**
+Candidate নতুন CV upload করলে — "Re-parse" option থাকবে। পুরনো data replace হবে।
+
+---
+
+## 6. AI MATCH SCORING & RANKING
+
+### কীভাবে score হয়:
+
+```
+Job Requirements:
+- Skills: React, Node.js, MongoDB, TypeScript (required)
+- Experience: 3+ years
+- Education: BSc in CS/CSE/related
+
+Candidate Profile:
+- Skills: React, Node.js, Python, MongoDB
+- Experience: 2.5 years
+- Education: BSc in CSE
+
+Scoring:
+Skills Match:
+  React ✅ → 25 points
+  Node.js ✅ → 25 points
+  MongoDB ✅ → 25 points
+  TypeScript ❌ → 0 points
+  Skill Score: 75/100
+
+Experience Match:
+  Required 3 years, has 2.5 years → 83%
+  Experience Score: 83/100
+
+Education Match:
+  BSc in CSE = perfect match → 100/100
+
+Weighted Final Score:
+  Skills (50%) + Experience (35%) + Education (15%)
+  = (75×0.5) + (83×0.35) + (100×0.15)
+  = 37.5 + 29.05 + 15
+  = 81.55% ≈ 82%
+```
+
+### Recruiter এর অভিজ্ঞতা:
+
+```
+Job এর candidate list খুললে:
+┌────────────────────────────────────────┐
+│ Rahim Ahmed          Score: 92% 🟢     │
+│ Skills: React ✅ Node ✅ MongoDB ✅    │
+│ Experience: 4 years                    │
+├────────────────────────────────────────┤
+│ Karim Khan           Score: 78% 🟡     │
+│ Skills: React ✅ Node ✅ MongoDB ❌    │
+│ Experience: 3 years                    │
+├────────────────────────────────────────┤
+│ Salam Mia            Score: 61% 🔴     │
+│ Skills: React ✅ Node ❌ MongoDB ❌    │
+│ Experience: 1 year                     │
+└────────────────────────────────────────┘
+```
+
+Score breakdown দেখার option থাকবে — recruiter click করলে দেখবে কোন কারণে কত পয়েন্ট পেয়েছে।
+
+### Auto Threshold Filter:
+
+```
+Recruiter threshold 70% set করেছে
+↓
+Rahim: 92% → ✅ Pipeline এ যায়
+Karim: 78% → ✅ Pipeline এ যায়
+Salam: 61% → ❌ Hidden Pool এ যায়, auto rejection email যায়
+```
+
+**Hidden Pool:**
+Recruiter যেকোনো সময় Hidden Pool দেখতে পারবে। "Recover" button দিয়ে যেকোনো candidate কে pipeline এ আনতে পারবে।
+
+### Industry Standard Implementation:
+
+**Scoring Weight Customization:**
+Recruiter চাইলে weight adjust করতে পারবে:
+- "এই job এর জন্য skills বেশি important" → Skills weight 70%
+- "Experience বেশি important" → Experience weight 50%
+
+এতে different jobs এর জন্য different scoring logic কাজ করবে।
+
+**Score Explanation (Explainable AI):**
+শুধু score না — কেন এই score সেটাও recruiter দেখবে। "Missing TypeScript skill cost 18 points" — এই ধরনের breakdown।
+
+---
+
+## 7. HIRING PIPELINE — KANBAN + LIST VIEW
+
+### Recruiter এর Kanban অভিজ্ঞতা:
+
+```
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────┐
+│  SHORTLISTED │ │  INTERVIEW   │ │    OFFER     │ │  HIRED   │
+│   (12)       │ │    (5)       │ │    (2)       │ │   (1)    │
+├──────────────┤ ├──────────────┤ ├──────────────┤ ├──────────┤
+│ Rahim Ahmed  │ │ Karim Khan   │ │ Nasim Uddin  │ │ Sara Ali │
+│ 92% match    │ │ 78% match    │ │ 85% match    │ │ 90%      │
+│ Applied 2d   │ │ Int: Tomorrow│ │ Offer sent   │ │          │
+│ [→ Move]     │ │ [→ Move]     │ │ [→ Move]     │ │          │
+├──────────────┤ │              │ └──────────────┘ └──────────┘
+│ Sadia Islam  │ │ Rafi Hossain │
+│ 88% match    │ │ 71% match    │
+│ Applied 3d   │ │              │
+└──────────────┘ └──────────────┘
+```
+
+**Card drag করলে:**
+- Candidate পরের stage এ চলে যায়
+- Auto email trigger হয়
+- Stage change timestamp save হয়
+
+**Card click করলে:**
+Side panel এ candidate এর full profile দেখায় — CV, scores, notes সব এক জায়গায়।
+
+### List View:
+
+```
+Name          Score  Stage       Applied    Experience  Actions
+─────────────────────────────────────────────────────────────
+Rahim Ahmed   92%    Shortlisted  2 days ago  4 years   [View][Move][Reject]
+Karim Khan    78%    Interview    5 days ago  3 years   [View][Move][Reject]
+Sadia Islam   88%    Shortlisted  3 days ago  3.5 years [View][Move][Reject]
+```
+
+Columns sort করা যাবে। Bulk select করে একসাথে multiple candidates move বা reject করা যাবে।
+
+### Industry Standard Implementation:
+
+**View Toggle:**
+Page reload ছাড়াই Kanban ↔ List switch হবে। User এর preference save হবে — পরের বার login করলেও same view দেখাবে।
+
+**Drag and Drop:**
+Smooth animation থাকবে। Mobile এ touch drag support থাকবে।
+
+**Real-time Update:**
+একই job এ দুইজন recruiter কাজ করলে — একজন candidate move করলে অন্যজন automatically দেখতে পাবে (WebSocket)।
+
+---
+
+## 8. ADVANCED SEARCH & FILTER
+
+### Recruiter এর অভিজ্ঞতা:
+
+```
+Candidate list এর উপরে filter bar:
+
+🔍 [Search by name or email        ]
+
+Skills: [React ×] [Node.js ×] [+ Add skill]
+Experience: [──●──────] 0-10 years (slider)
+Match Score: [70%] minimum
+Stage: [All ▼] / Shortlisted / Interview / Offer
+Applied: [Last 7 days ▼]
+Education: [Any ▼]
+
+[Apply Filters]  [Clear All]
+
+Showing 23 of 150 candidates
+```
+
+**Smart Search:**
+"React developer 3 years" লিখলে — system বোঝে skills=React, experience≥3। Natural language search।
+
+### Industry Standard Implementation:
+
+**Filter State URL এ save হবে:**
+Recruiter filter করে কাউকে link share করলে সে same filtered view দেখবে।
+
+**Saved Filters:**
+Recruiter frequently use করা filters save করতে পারবে। "Senior React Devs" নামে একটা filter save করলে পরের বার one-click এ apply হবে।
+
+---
+
+## 9. AUTOMATED EMAIL NOTIFICATIONS
+
+### Candidate কোন কোন email পাবে:
+
+```
+1. Registration → "Welcome! Please verify your email"
+2. Apply করলে → "Application received for [Job Title]"
+3. Shortlisted হলে → "Great news! Your CV has been shortlisted"
+4. Rejected হলে → "Thank you for your interest in [Company]"
+5. Interview stage → "You've been selected for an interview"
+6. Offer stage → "We have an exciting update for you"
+7. Hired → "Congratulations! Welcome to the team"
+```
+
+### Recruiter কোন কোন notification পাবে:
+
+```
+1. নতুন application এলে → in-app notification (bell icon)
+2. High score candidate (90%+) → email + in-app
+3. Job deadline আসছে (3 days আগে) → reminder email
+4. Daily digest → "আজকে X টা নতুন application এসেছে"
+```
+
+### Email Design:
+
+প্রতিটা email হবে:
+- Company branded (logo, colors)
+- Mobile-friendly HTML email
+- Clear CTA button (e.g. "View Your Application Status")
+- Unsubscribe option (legal requirement)
+
+### Industry Standard Implementation:
+
+**Email Template System:**
+Admin চাইলে email templates customize করতে পারবে। Company name, logo, tone সব edit করা যাবে।
+
+**Email Queue:**
+একসাথে হাজার email পাঠাতে হলে queue system ব্যবহার করতে হবে (Bull Queue)। Spam folder এ না গেলে proper email service (SendGrid/Resend) use করতে হবে।
+
+**Notification Preferences:**
+User decide করতে পারবে কোন email পেতে চায়, কোনটা না। Forced করা যাবে না।
+
+---
+
+## 10. ANALYTICS DASHBOARD
+
+### Recruiter Dashboard:
+
+```
+┌─────────────────────────────────────────────┐
+│  OVERVIEW          This Month               │
+├──────────┬──────────┬──────────┬────────────┤
+│ 150      │ 89       │ 5        │ 12 days    │
+│ Applied  │ Reviewed │ Hired    │ Avg. Hire  │
+└──────────┴──────────┴──────────┴────────────┘
+
+HIRING FUNNEL
+Applied ████████████████████ 150
+Shortlisted ████████████ 89 (59%)
+Interview ██████ 34 (23%)
+Offer ██ 8 (5%)
+Hired █ 5 (3%)
+
+TOP SKILLS IN APPLICATIONS
+React     ████████████ 67 candidates
+Node.js   █████████ 45 candidates
+Python    ███████ 38 candidates
+
+RECENT ACTIVITY
+• Rahim Ahmed moved to Interview — 2 hours ago
+• 5 new applications for "Senior Dev" — today
+• Karim Khan rejected — yesterday
+```
+
+### Admin Dashboard এ extra থাকবে:
+
+```
+Platform Overview:
+- Total active jobs: 45
+- Total candidates: 1,250
+- Total recruiters: 12
+- Hired this month: 23
+
+Recruiter Performance:
+Name          Jobs Posted  Hired  Avg. Time
+───────────────────────────────────────────
+Recruiter A      8          5     10 days
+Recruiter B      5          3     15 days
+```
+
+### Industry Standard Implementation:
+
+**Charts:**
+Bar chart, Line chart, Funnel chart — সব interactive হবে। Hover করলে exact number দেখাবে।
+
+**Date Range Filter:**
+Last 7 days / Last 30 days / Last 3 months / Custom range।
+
+**Export:**
+Analytics data PDF বা Excel এ export করা যাবে। Management কে report দিতে কাজে লাগবে।
+
+---
+
+## 🏆 OVERALL INDUSTRY STANDARD DESIGN PRINCIPLES
+
+তোমার product টা যেন truly professional লাগে সেজন্য এই জিনিসগুলো মাথায় রাখতে হবে:
+
+**Speed:**
+প্রতিটা page 2 seconds এর মধ্যে load হতে হবে। Search results 300ms এর মধ্যে আসতে হবে।
+
+**Empty States:**
+কোনো data না থাকলে blank page না দেখিয়ে helpful message দেখাবে। "No candidates yet. Share your job link to start receiving applications" — এই ধরনের।
+
+**Error Handling:**
+কিছু fail হলে user কে clearly জানাবে কী হয়েছে এবং কী করতে হবে। Technical error message দেখাবে না।
+
+**Loading States:**
+Data load হওয়ার সময় skeleton screen দেখাবে — blank screen না। User বুঝবে কিছু আসছে।
+
+**Mobile Experience:**
+Recruiter phone এ দেখলেও সব কাজ করতে পারবে। Kanban board mobile এ scroll করে দেখা যাবে।
+
+**Onboarding:**
+নতুন recruiter login করলে একটা simple checklist দেখাবে:
+```
+✅ Account created
+⬜ Post your first job
+⬜ Set up email notifications
+⬜ Invite team members
+```
+

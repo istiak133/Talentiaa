@@ -1,0 +1,418 @@
+# 🔍 Talentiaa Database — Data Inconsistency & Integrity Analysis
+
+> Analysis of [talentiaa_schema.sql](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql) (495 lines, 16 tables) and [supabase_auth_bootstrap.sql](file:///Users/istiakahmed/Talentiaa/supabase_auth_bootstrap.sql) (302 lines)
+
+---
+
+## Summary Table
+
+| Severity | Count | Description |
+|----------|-------|-------------|
+| 🔴 CRITICAL | 3 | Will cause failures or security breaches in production |
+| 🟠 HIGH | 5 | Will cause data inconsistency over time |
+| 🟡 MEDIUM | 6 | Design weaknesses that can lead to dirty data |
+| 🔵 LOW | 4 | Minor improvements for robustness |
+
+---
+
+## 🔴 CRITICAL Issues
+
+### C1. RLS (Row Level Security) Missing on 15 out of 16 Tables
+
+**File:** [talentiaa_schema.sql](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql)
+
+Only `public.users` has RLS enabled (in bootstrap file). **All other tables — `jobs`, `applications`, `resumes`, `candidate_profiles`, `notifications`, etc. — have NO RLS.**
+
+Since Supabase clients connect **directly to the database** using the `anon` key, this means:
+- ✅ Any authenticated user can **read ALL jobs, ALL applications, ALL resumes** of ALL candidates
+- ✅ A candidate can **see other candidates' scores and notes**
+- ✅ A candidate can **modify any job posting**
+- ✅ Anyone can **delete any data** in these tables
+
+> [!CAUTION]
+> This is a **production-breaking security vulnerability**. Every table needs RLS policies before going live. Without them, your database is essentially open to any logged-in user.
+
+**Fix:** Enable RLS and create policies for every table:
+```sql
+-- Example for jobs table
+ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;
+
+-- Recruiters see their own jobs; candidates see published jobs
+CREATE POLICY jobs_select ON public.jobs FOR SELECT TO authenticated
+  USING (
+    recruiter_id = auth.uid()
+    OR public.current_user_role() = 'admin'
+    OR (status = 'published' AND application_deadline >= current_date)
+  );
+
+-- Only the owning recruiter or admin can update
+CREATE POLICY jobs_update ON public.jobs FOR UPDATE TO authenticated
+  USING (recruiter_id = auth.uid() OR public.current_user_role() = 'admin');
+
+-- Only recruiter/admin can insert
+CREATE POLICY jobs_insert ON public.jobs FOR INSERT TO authenticated
+  WITH CHECK (recruiter_id = auth.uid() OR public.current_user_role() = 'admin');
+```
+
+---
+
+### C2. `password_hash` Column is Dead — Constraint Creates False Safety
+
+**File:** [talentiaa_schema.sql:152](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L152)
+
+```sql
+constraint users_password_or_oauth_chk
+  check (password_hash is not null or oauth_provider is not null)
+```
+
+With Supabase Auth, passwords are managed in `auth.users`, NOT in `public.users`. The bootstrap trigger [handle_auth_user_created](file:///Users/istiakahmed/Talentiaa/supabase_auth_bootstrap.sql#L65-L114) **never sets `password_hash`** — it always sets `oauth_provider` to `'supabase'` or `'google'`, which satisfies the constraint.
+
+**Problem:** `password_hash` will **always be NULL** in production. The column is useless dead weight and the constraint gives a false sense of security — it looks like it's enforcing "must have a password or OAuth", but it's actually just enforcing "must have oauth_provider set".
+
+**Fix:**
+```sql
+-- Remove the dead column and useless constraint
+ALTER TABLE public.users DROP COLUMN password_hash;
+ALTER TABLE public.users DROP CONSTRAINT users_password_or_oauth_chk;
+```
+
+---
+
+### C3. `auth_sessions` Table is Completely Redundant
+
+**File:** [talentiaa_schema.sql:168-181](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L168-L181)
+
+Supabase manages sessions internally via `auth.sessions`. Your `public.auth_sessions` table with `refresh_token_hash`, `device_label`, etc. **will never be populated** by Supabase's auth system. No trigger or function writes to it.
+
+**Result:** An empty orphan table sitting in production, confusing developers.
+
+**Fix:** Drop the table entirely, or if you need custom session tracking, build an explicit integration.
+
+```sql
+DROP TABLE IF EXISTS public.auth_sessions;
+```
+
+---
+
+## 🟠 HIGH Severity Issues
+
+### H1. No Role Enforcement on `jobs.recruiter_id`
+
+**File:** [talentiaa_schema.sql:185](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L185)
+
+```sql
+recruiter_id uuid not null references public.users(id) on delete restrict
+```
+
+This FK only checks that the user **exists**, not that they have `role = 'recruiter'`. A candidate can be set as a job's recruiter. Same issue for [application_notes.recruiter_id](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L293) and [saved_filters.recruiter_id](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L300).
+
+**Fix:** Add a trigger-based role check:
+```sql
+CREATE OR REPLACE FUNCTION public.enforce_recruiter_role()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.users
+    WHERE id = NEW.recruiter_id AND role IN ('recruiter', 'admin')
+  ) THEN
+    RAISE EXCEPTION 'recruiter_id must reference a user with recruiter or admin role';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_jobs_enforce_recruiter_role
+  BEFORE INSERT OR UPDATE OF recruiter_id ON public.jobs
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_recruiter_role();
+```
+
+---
+
+### H2. `application_stage_history` Audit Trail Missing `moved_by`
+
+**File:** [talentiaa_schema.sql:118-133](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L118-L133)
+
+The `log_application_stage_change()` trigger logs stage transitions but **never captures `moved_by`** (who performed the action):
+
+```sql
+INSERT INTO public.application_stage_history (
+  application_id, from_stage, to_stage, created_at  -- ❌ moved_by is missing!
+) VALUES (
+  new.id, old.current_stage, new.current_stage, now()
+);
+```
+
+The `moved_by` column exists in the table (line 285) but is always NULL from the trigger.
+
+**Fix:**
+```sql
+-- Use auth.uid() to capture who made the change
+INSERT INTO public.application_stage_history (
+  application_id, from_stage, to_stage, moved_by, created_at
+) VALUES (
+  new.id, old.current_stage, new.current_stage, auth.uid(), now()
+);
+```
+
+---
+
+### H3. `resume_id` in Applications — `ON DELETE SET NULL` Causes Orphaned Scores
+
+**File:** [talentiaa_schema.sql:265](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L265)
+
+```sql
+resume_id uuid references public.resumes(id) on delete set null
+```
+
+If a resume is deleted, the application keeps its `score_overall` and `score_breakdown` — but the **source data (resume, parse results) that produced those scores is gone**. This creates a data inconsistency:
+- The application shows a score of 85
+- But the resume that generated that score no longer exists
+- There's no way to verify, audit, or recalculate the score
+
+**Fix:** Either use `ON DELETE RESTRICT` (don't allow deleting a resume that has applications), or add a `resume_snapshot` JSONB column that captures the parse result at the time of scoring.
+
+---
+
+### H4. `parsing_jobs.candidate_id` Can Contradict `resumes.candidate_id`
+
+**File:** [talentiaa_schema.sql:246-259](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L246-L259)
+
+Both `parsing_jobs` and `resumes` independently store `candidate_id`. If a parsing job is created with a different `candidate_id` than its linked resume, the data is inconsistent. There's no cross-check:
+
+```sql
+resume_id uuid not null references public.resumes(id),    -- resume belongs to candidate A
+candidate_id uuid not null references public.users(id),   -- but parsing_jobs says candidate B
+```
+
+**Fix:** Add a trigger or remove the redundant column:
+```sql
+-- Option 1: Remove redundant column, derive from resume
+ALTER TABLE public.parsing_jobs DROP COLUMN candidate_id;
+
+-- Option 2: Add a check trigger
+CREATE OR REPLACE FUNCTION public.check_parsing_job_candidate()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.candidate_id != (SELECT candidate_id FROM public.resumes WHERE id = NEW.resume_id) THEN
+    RAISE EXCEPTION 'parsing_jobs.candidate_id must match resumes.candidate_id';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+```
+
+---
+
+### H5. `scoring_config` JSONB Has No Schema Validation Beyond "is object"
+
+**File:** [talentiaa_schema.sql:201-209](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L201-L209)
+
+```sql
+scoring_config jsonb not null default '{"skillsWeight":50,"experienceWeight":35,"educationWeight":15}',
+constraint jobs_scoring_config_object_chk check (jsonb_typeof(scoring_config) = 'object')
+```
+
+This only checks that it's a JSON object. Someone can insert `{"foo": "bar"}` or `{"skillsWeight": -999}`. No validation that:
+- Required keys (`skillsWeight`, `experienceWeight`, `educationWeight`) exist
+- Values are numeric and between 0-100
+- Weights sum to 100
+
+**Fix:**
+```sql
+ALTER TABLE public.jobs ADD CONSTRAINT jobs_scoring_config_valid_chk CHECK (
+  scoring_config ? 'skillsWeight'
+  AND scoring_config ? 'experienceWeight'
+  AND scoring_config ? 'educationWeight'
+  AND (scoring_config->>'skillsWeight')::numeric >= 0
+  AND (scoring_config->>'experienceWeight')::numeric >= 0
+  AND (scoring_config->>'educationWeight')::numeric >= 0
+  AND (scoring_config->>'skillsWeight')::numeric
+    + (scoring_config->>'experienceWeight')::numeric
+    + (scoring_config->>'educationWeight')::numeric = 100
+);
+```
+
+---
+
+## 🟡 MEDIUM Severity Issues
+
+### M1. `notifications.event_type` is `text` — Not Type-Safe
+
+**File:** [talentiaa_schema.sql:313](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L313)
+
+Unlike `analytics_events.event_type` which uses the `analytics_event_type` enum, notifications use a plain `text` field. Any string can be inserted: typos, inconsistent naming, etc.
+
+**Fix:** Create a `notification_event_type` enum or at minimum add a CHECK constraint.
+
+---
+
+### M2. `analytics_snapshots.scope_id` Has No FK — Polymorphic Without Context
+
+**File:** [talentiaa_schema.sql:377](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L377)
+
+`scope_id uuid` has no FK reference. It could point to a job, user, or anything. If the referenced entity is deleted, the snapshot is orphaned with **no way to know what it pointed to**.
+
+The same issue exists for [activity_logs.entity_id](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L356).
+
+**Fix:** Add a `scope_type text NOT NULL` column (like `activity_logs` has `entity_type`) and consider using composite FK lookups via a trigger.
+
+---
+
+### M3. `candidate_alias` Collision Risk — No Retry Logic
+
+**File:** [talentiaa_schema.sql:266](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L266)
+
+```sql
+candidate_alias text not null unique default
+  ('CAN-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8)))
+```
+
+This generates 8 hex characters (4.3 billion possibilities). With UNIQUE constraint, a collision will cause an **INSERT failure** with no retry. At scale (millions of applications), collisions become increasingly likely (birthday paradox).
+
+**Fix:** Use a longer substring (12+ chars) or implement a retry function:
+```sql
+-- Safer: 12 hex chars = 281 trillion combinations
+candidate_alias text not null unique default
+  ('CAN-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 12)))
+```
+
+---
+
+### M4. `recruiter_invites.invited_by` is `ON DELETE RESTRICT` — Can Block Admin Deletion
+
+**File:** [talentiaa_schema.sql:158](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L158)
+
+If admin A invited 100 recruiters, you **cannot delete admin A's account** without first updating or deleting all those invite records. Same issue with [jobs.recruiter_id ON DELETE RESTRICT](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L185).
+
+**Fix:** Consider `ON DELETE SET NULL` for `invited_by` or implement a soft-delete pattern for users.
+
+---
+
+### M5. No Check That `application_deadline` is in the Future
+
+**File:** [talentiaa_schema.sql:198](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L198)
+
+A job can be created with `application_deadline = '2020-01-01'`. There's no constraint preventing past deadlines.
+
+**Fix:**
+```sql
+-- At minimum, check on INSERT (allow existing records to remain)
+ALTER TABLE public.jobs ADD CONSTRAINT jobs_deadline_future_chk
+  CHECK (application_deadline >= current_date OR status IN ('closed', 'paused'));
+```
+
+---
+
+### M6. `education` and `certifications` JSONB — No Structure Validation
+
+**File:** [talentiaa_schema.sql:219-220](file:///Users/istiakahmed/Talentiaa/talentiaa_schema.sql#L219-L220)
+
+```sql
+education jsonb not null default '[]'::jsonb,
+certifications jsonb not null default '[]'::jsonb,
+```
+
+These default to `[]` (array) but nothing prevents inserting `{"random": "object"}` instead of an array. Over time, client-side bugs can corrupt this data silently.
+
+**Fix:**
+```sql
+CONSTRAINT education_is_array CHECK (jsonb_typeof(education) = 'array')
+CONSTRAINT certifications_is_array CHECK (jsonb_typeof(certifications) = 'array')
+```
+
+---
+
+## 🔵 LOW Severity Issues
+
+### L1. Dual `updated_at` Trigger on `users` (Harmless but Redundant)
+
+Both `set_updated_at()` (schema file, line 434-437) and `handle_auth_user_updated()` (bootstrap, line 132-151) can set `updated_at = now()` on `public.users`. When an auth change triggers the bootstrap function, it updates `public.users`, which then fires `set_updated_at()` again. The result is correct but it's a double-write.
+
+### L2. `email_templates.updated_by` ON DELETE SET NULL — Loses Audit Trail
+
+If the admin who last edited a template is deleted, `updated_by` becomes NULL. You lose the record of who made the last change.
+
+### L3. `analytics_snapshots.date_from/date_to` — No Range Check
+
+Nothing prevents `date_from > date_to`, which would create an invalid date range.
+
+### L4. Bootstrap Backfill Hardcodes `'candidate'` Role
+
+[supabase_auth_bootstrap.sql:183](file:///Users/istiakahmed/Talentiaa/supabase_auth_bootstrap.sql#L183) — The backfill query always sets `role = 'candidate'`. If an admin was created directly in `auth.users`, they'd be backfilled as a candidate.
+
+---
+
+## 🗺️ Relationship Integrity Map
+
+```mermaid
+graph TD
+    subgraph "🔴 Missing RLS"
+        J[jobs]
+        A[applications]
+        R[resumes]
+        CP[candidate_profiles]
+        N[notifications]
+        PJ[parsing_jobs]
+        AN[application_notes]
+        SF[saved_filters]
+        AE[analytics_events]
+        ASH[application_stage_history]
+        AL[activity_logs]
+        ET[email_templates]
+        NP[notification_preferences]
+        RI[recruiter_invites]
+        AS2[analytics_snapshots]
+    end
+
+    subgraph "✅ Has RLS"
+        U[users]
+    end
+
+    U -->|"recruiter_id (no role check)"| J
+    U -->|"candidate_id"| A
+    U -->|"candidate_id"| R
+    R -->|"resume_id (SET NULL = orphaned scores)"| A
+    R -->|"resume_id"| PJ
+    PJ -->|"candidate_id (can contradict resume)"| U
+    J -->|"job_id (CASCADE)"| A
+    A -->|"id (CASCADE)"| ASH
+    A -->|"id (CASCADE)"| AN
+    ASH -->|"moved_by (always NULL)"| U
+
+    style U fill:#22c55e,color:#000
+    style J fill:#ef4444,color:#fff
+    style A fill:#ef4444,color:#fff
+    style R fill:#ef4444,color:#fff
+    style CP fill:#ef4444,color:#fff
+    style N fill:#ef4444,color:#fff
+    style PJ fill:#ef4444,color:#fff
+```
+
+---
+
+## ✅ যেগুলো ভালো করা হয়েছে (Strengths)
+
+| Feature | Assessment |
+|---------|------------|
+| Enum types for all statuses | ✅ Excellent — prevents typo-based data corruption |
+| `set_updated_at()` triggers on all tables | ✅ Consistent `updated_at` management |
+| Application stage transition validation | ✅ Solid state machine with `before_update_applications()` |
+| Optimistic concurrency (`version` column) | ✅ Great for multi-user race condition prevention |
+| `citext` for emails | ✅ Case-insensitive email matching |
+| `applications_unique_job_candidate` constraint | ✅ Prevents duplicate applications |
+| Resume deduplication via `file_hash` partial index | ✅ Smart approach |
+| Bootstrap trigger idempotency (`IF NOT EXISTS`) | ✅ Safe to re-run |
+| `block_non_admin_profile_privilege_changes` | ✅ Good security guard |
+| Comprehensive GIN indexes for skills/arrays | ✅ Good query performance planning |
+
+---
+
+## 🎯 Priority Fix Order
+
+1. **🔴 RLS Policies on all tables** — Do this BEFORE any real user data enters the system
+2. **🔴 Drop `password_hash` and `auth_sessions`** — Remove dead code
+3. **🟠 Add role enforcement on `recruiter_id` FKs** — Prevent data corruption
+4. **🟠 Fix `moved_by` in stage history trigger** — Critical for audit compliance
+5. **🟠 Add `scoring_config` validation** — Prevent broken scoring
+6. **🟡 Fix remaining MEDIUM issues** — Before beta launch
+7. **🔵 Address LOW issues** — Can be done incrementally

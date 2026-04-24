@@ -1,0 +1,969 @@
+# 🔍 Priority Features — Complete Flow & Implementation Guide (Consistency Fixed)
+
+---
+
+## Scope Lock (Final)
+এই ডকুমেন্টে শুধু নিচের feature গুলো implement করা হবে:
+1. Multi-Role System & Secure Authentication
+2. Smart Job Posting
+3. Public Job Board
+4. Candidate Application Flow + CV Upload
+5. AI Resume Parsing
+6. AI Match Scoring & Ranking
+7. Structured Hiring Pipeline (Review, Interview, Offer, Hired, Rejected)
+8. Kanban + List-Based Candidate Tracking + Advanced Search/Filters
+9. Automated Email Alerts & Application Notifications
+10. Analytics Dashboard
+
+Out of scope:
+- MCQ
+- Coding platform
+- Video call
+
+---
+
+## ✅ Consistency Fixes Applied Globally
+1. Refresh token conflict resolved:
+- Access token: 15 minutes
+- Refresh token: 7 days
+- Remember me on: 30 days refresh token
+- Absolute session max: 30 days
+
+2. Job fields standardized:
+- jobType: Full-time, Part-time, Contract, Internship
+- workplaceType: Onsite, Hybrid, Remote
+
+3. Hidden Pool behavior fixed:
+- Hidden Pool এ গেলে auto rejection email যাবে না
+- Final rejection action এ rejection mail যাবে
+
+4. Privacy rule enforced:
+- Recruiter candidate email/phone search করতে পারবে না
+- Recruiter search করবে alias/skills/score/stage/experience দিয়ে
+
+5. Recruiter OAuth rule fixed:
+- শুধুমাত্র invited recruiter email এর জন্য OAuth allowed
+
+6. Stage naming fixed:
+- Internal canonical: REVIEW, INTERVIEW, OFFER, HIRED, REJECTED
+- UI তে চাইলে REVIEW label কে "Shortlisted" দেখানো যাবে
+
+7. Email unsubscribe fixed:
+- Transactional emails: no unsubscribe
+- Optional emails (digest/promotional): unsubscribe mandatory
+
+8. Scoring comparability fixed:
+- First application আসার পর scoringConfig lock
+- Change করলে scoringVersion++ + explicit recalc
+
+9. Realtime conflict fixed:
+- Optimistic concurrency with version check
+- Conflict হলে API 409 ফেরত দেবে
+
+10. Free-first AI parsing fixed:
+- Provider abstraction
+- Primary free provider (Gemini Flash/Groq free)
+- Fallback rule-based + manual correction
+
+11. Job draft model simplified:
+- আলাদা JobDraft collection থাকবে না
+- Job model এই status="draft" ব্যবহার হবে
+
+12. Recruiter invite expiry fixed:
+- Invite validity: 72 hours
+- status: pending | accepted | expired
+- usedAt tracked থাকবে
+
+---
+
+## 1. MULTI-ROLE SYSTEM & SECURE AUTHENTICATION
+
+### কীভাবে কাজ করে?
+
+### Candidate এর অভিজ্ঞতা:
+```
+Website এ আসে -> "Sign Up" click করে
+-> নাম, email, password দেয়
+-> "I'm looking for a job" select করে
+-> Email verification link পায়
+-> Verify করে login করে
+-> Candidate dashboard এ যায়
+```
+
+### Recruiter এর অভিজ্ঞতা:
+```
+Admin invite email পাঠায়
+-> Recruiter invite link click করে
+-> Password set করে বা Google OAuth (same invited email) use করে
+-> Login করে Recruiter dashboard এ যায়
+```
+
+### Admin এর অভিজ্ঞতা:
+```
+System seeded super admin account দিয়ে login করে
+-> Recruiter invite করে
+-> User suspend/activate করে
+-> Security and activity logs দেখে
+```
+
+### Industry Standard Implementation
+- Email + Password login
+- Google OAuth (candidate open, recruiter invite-bound)
+- JWT access token + refresh token rotation
+- Reuse detection (token replay detect)
+- Remember device for 30 days
+- Suspicious login alert email
+- Device/session management with remote logout
+
+### MVC Implementation Steps
+
+#### Models
+1. User
+2. RecruiterInvite
+3. AuthSession
+4. ActivityLog
+
+RecruiterInvite required fields:
+- invitedEmail
+- invitedBy
+- tokenHash
+- expiresAt (now + 72h)
+- status (pending/accepted/expired)
+- usedAt
+
+#### Controllers
+1. AuthController
+2. AdminUserController
+
+#### Services
+1. TokenService
+2. InviteService
+3. SessionService
+4. AuthRiskService
+
+#### Routes
+1. POST /auth/register
+2. POST /auth/login
+3. POST /auth/refresh
+4. POST /auth/logout
+5. POST /auth/verify-email
+6. POST /auth/oauth/google
+7. POST /admin/recruiters/invite
+8. POST /admin/recruiters/invite/accept
+
+### End-to-End Flow
+```
+User auth request
+-> role policy check
+-> token/session issue
+-> audit log write
+-> role-based dashboard redirect
+```
+
+---
+
+## 2. SMART JOB POSTING
+
+### Recruiter এর অভিজ্ঞতা:
+```
+Dashboard -> "Post New Job"
+
+Step 1: Basic Info
+- Job title লিখে
+- AI title analyze করে suggested skills দেয়
+- Recruiter "Keep Suggestions" বা "Discard" করতে পারে
+
+Step 2: Job Details
+- Department
+- jobType (Full-time/Part-time/Contract/Internship)
+- workplaceType (Onsite/Hybrid/Remote)
+- Location
+- Salary range + show/hide toggle
+- Experience level (Junior/Mid/Senior/Lead)
+
+Step 3: Requirements
+- Required Skills tag add করে
+- "Generate JD with AI" click করে
+- AI full job description generate করে
+- Recruiter 3 option পায়: Keep / Edit / Replace with Manual
+
+Step 4: Pipeline Setup
+- AI match threshold set (e.g. 70%)
+- Application deadline
+- Hiring count (কতজন hire করবে)
+
+Step 5: Preview & Publish
+- Candidate view হিসেবে preview
+- Save Draft বা Publish
+```
+
+### Candidate এর অভিজ্ঞতা:
+```
+Job board এ job card দেখে:
+- Job title
+- Company
+- Location
+- Salary (if visible)
+- Required skills chips
+- Posted time (e.g. 2 days ago)
+- Match % (if logged in + CV/profile exists)
+```
+
+### Admin এর অভিজ্ঞতা:
+```
+Admin job moderation panel দেখে
+-> policy violation job pause/unpublish করতে পারে
+```
+
+### Industry Standard Implementation
+- Multi-step form
+- Step-wise autosave draft
+- Browser close হলেও draft থাকে
+- AI assist optional; recruiter manual override সবসময় possible
+- আলাদা JobDraft model না নিয়ে Job.status="draft" use করা হবে
+
+### MVC Implementation Steps
+
+#### Models
+1. Job
+2. ActivityLog
+
+#### Controllers
+1. JobController
+2. AdminJobModerationController
+
+#### Services
+1. JobLifecycleService
+2. JobAIAssistService
+3. JobValidationService
+
+#### Routes
+1. POST /recruiter/jobs
+2. PATCH /recruiter/jobs/:jobId
+3. POST /recruiter/jobs/:jobId/publish
+4. POST /recruiter/jobs/:jobId/pause
+5. POST /recruiter/jobs/:jobId/close
+6. GET /admin/jobs/moderation
+
+### End-to-End Flow
+```
+Recruiter title দেয়
+-> AI skill/JD suggestion দেয়
+-> recruiter keep/edit/cancel decide করে
+-> একই Job model এ status=draft autosave
+-> preview
+-> publish
+-> public board এ visible
+```
+
+---
+
+## 3. PUBLIC JOB BOARD
+
+### Candidate এর অভিজ্ঞতা:
+```
+Landing page এ search box
+-> keyword type (React Developer)
+-> debounced real-time results
+-> left filters:
+   - jobType
+   - workplaceType
+   - Location
+   - Experience level
+   - Salary slider
+   - Skills
+-> job cards list
+-> card click -> right side split-view details (page reload ছাড়া)
+-> Apply Now
+```
+
+### Logged-in না থাকলে
+```
+Apply click -> Login/Register page
+-> login success
+-> same job details page তে redirect back
+```
+
+### Recruiter এর অভিজ্ঞতা:
+```
+নিজের published job public listing preview করতে পারে
+```
+
+### Admin এর অভিজ্ঞতা:
+```
+Public board policy monitor করে
+-> flagged/invalid listing hide করতে পারে
+```
+
+### Industry Standard Implementation
+- Debounced search (300ms)
+- URL-synced filter state
+- Shareable filter links
+- Numbered pagination (not infinite scroll)
+
+### MVC Implementation Steps
+
+#### Models
+1. Job
+
+#### Controllers
+1. PublicJobBoardController
+
+#### Services
+1. JobSearchService
+2. JobFilterService
+
+#### Routes
+1. GET /public/jobs
+2. GET /public/jobs/:jobId
+
+### End-to-End Flow
+```
+Candidate search/filter
+-> query build
+-> paginated data fetch
+-> split view details
+-> apply with redirect-back auth gate
+```
+
+---
+
+## 4. CANDIDATE APPLICATION FLOW + CV UPLOAD
+
+### Candidate এর অভিজ্ঞতা:
+```
+Apply Now click
+-> যদি saved profile থাকে: "Apply with saved profile" one-click option
+-> অথবা "Upload new CV"
+
+New CV path:
+Step 1: CV Upload (PDF/DOC, drag-drop)
+Step 2: Basic info confirm (auto-fill from CV)
+        - নাম, email, phone
+        - LinkedIn (optional)
+        - Portfolio/GitHub (optional)
+Step 3: Cover Letter (optional rich text)
+Step 4: Review & Submit
+
+Submit হলে:
+- "Application Submitted" screen
+- confirmation email
+- candidate dashboard এ application visible
+```
+
+### Technical Upload Flow
+```
+CV drag-drop
+-> cloud upload (progress bar)
+-> background parsing trigger
+-> user form fill continue করে (no waiting)
+-> submit
+```
+
+### Recruiter এর অভিজ্ঞতা:
+```
+New application notification
+-> recruiter candidate list এ নতুন application আসে
+```
+
+### Admin এর অভিজ্ঞতা:
+```
+Application intake health দেখে
+-> failed upload বা stuck states monitor করে
+```
+
+### Industry Standard Implementation
+- Presigned URL direct upload
+- Duplicate application block (jobId + candidateId unique)
+- Deadline পার হলে apply disabled + UI message
+
+### MVC Implementation Steps
+
+#### Models
+1. Resume
+2. CandidateProfile
+3. Application
+4. Notification
+
+#### Controllers
+1. ResumeController
+2. ApplicationController
+
+#### Services
+1. PresignedUploadService
+2. DuplicateApplicationGuardService
+3. ApplicationStatusService
+
+#### Routes
+1. POST /candidate/resumes/presign
+2. POST /candidate/applications
+3. GET /candidate/applications
+4. GET /recruiter/jobs/:jobId/applications
+
+### End-to-End Flow
+```
+Candidate apply starts
+-> upload + form parallel
+-> duplicate/deadline checks
+-> application saved
+-> recruiter notified
+-> candidate sees submitted state
+```
+
+---
+
+## 5. AI RESUME PARSING
+
+### Candidate এর অভিজ্ঞতা:
+```
+CV upload complete
+-> parsing status দেখে (pending/done/failed)
+-> parsed fields auto-fill হয়
+-> candidate verify/edit/save করে
+```
+
+### Recruiter এর অভিজ্ঞতা:
+```
+Candidate profile view:
+- parsed skills chips
+- matched skills green, missing skills grey
+- experience timeline
+- education
+- parsing confidence score (e.g. 92%)
+-> low confidence হলে original CV দেখে
+```
+
+### Admin এর অভিজ্ঞতা:
+```
+Parsing success/failure dashboard monitor
+-> provider outage হলে fallback behavior verify
+```
+
+### Structured Parse Output Example
+```json
+{
+  "name": "Rahim Ahmed",
+  "email": "rahim@email.com",
+  "phone": "017XXXXXXXX",
+  "skills": ["React", "Node.js", "MongoDB", "Python"],
+  "experience": [
+    {
+      "company": "Tech BD",
+      "role": "Software Engineer",
+      "from": "2022-01",
+      "to": "2024-03"
+    }
+  ],
+  "education": [
+    {
+      "degree": "BSc in CSE",
+      "university": "BUET",
+      "year": "2021"
+    }
+  ],
+  "total_experience_years": 2.3,
+  "certifications": ["AWS Certified"]
+}
+```
+
+### Industry Standard Implementation
+- Text extraction: pdf-parse/mammoth
+- AI parsing provider abstraction
+- Free provider first
+- Fallback parser + manual correction
+- Re-parse option on new CV
+
+### MVC Implementation Steps
+
+#### Models
+1. Resume
+2. CandidateProfile
+3. ParsingJob
+
+ParsingJob required fields:
+- resumeId (ref)
+- status (pending/processing/done/failed)
+- attempts
+- lastError
+- provider
+
+#### Controllers
+1. ParsingController
+
+#### Services
+1. ResumeTextExtractionService
+2. ParsingProviderRouterService
+3. ProfileAutofillService
+4. ParsingFallbackService
+
+#### Routes
+1. POST /candidate/resumes/:resumeId/parse
+2. GET /candidate/resumes/:resumeId/parse-status
+3. PATCH /candidate/profile/from-parse
+
+### End-to-End Flow
+```
+CV uploaded
+-> parse queue
+-> provider parse
+-> confidence + structured data store
+-> candidate manual correction
+-> final profile update
+```
+
+---
+
+## 6. AI MATCH SCORING & RANKING
+
+### কীভাবে score হয় (Example)
+```
+Job Requirements:
+- Skills: React, Node.js, MongoDB, TypeScript
+- Experience: 3+ years
+- Education: BSc CS/CSE related
+
+Candidate Profile:
+- Skills: React, Node.js, MongoDB, Python
+- Experience: 2.5 years
+- Education: BSc in CSE
+
+Skill score: 75
+Experience score: 83
+Education score: 100
+
+Weighted score =
+Skills(50%) + Experience(35%) + Education(15%)
+= 82%
+```
+
+### Candidate এর অভিজ্ঞতা:
+```
+নিজ dashboard এ application overall score দেখতে পারে (e.g. 82%)
+-> score breakdown, missing skills, weighted details দেখতে পায় না
+```
+
+### Recruiter এর অভিজ্ঞতা:
+```
+Candidate ranked list:
+- score high থেকে low
+- score breakdown expandable
+- threshold set (e.g. 70%)
+- threshold এর নিচে Hidden Pool
+- recover button দিয়ে pipeline এ ফেরত আনা যায়
+```
+
+### Admin এর অভিজ্ঞতা:
+```
+Scoring audit এবং version changes দেখে
+```
+
+### Industry Standard Implementation
+- Explainable score breakdown
+- Scoring weights configurable only before first application
+- First application পর scoring config lock
+- New config হলে scoringVersion++
+- Hidden Pool no rejection mail
+- Candidate visibility policy:
+  - Candidate: overall score only
+  - Recruiter/Admin: full score breakdown
+
+### MVC Implementation Steps
+
+#### Models
+1. Job (scoringConfig, threshold, scoringVersion)
+2. Application (scoreSummary, hiddenPoolFlag)
+3. ActivityLog
+
+#### Controllers
+1. ScoringController
+2. RecruiterScoringConfigController
+
+#### Services
+1. MatchScoringService
+2. ScoreExplanationService
+3. ThresholdRoutingService
+
+#### Routes
+1. POST /recruiter/jobs/:jobId/scoring-config
+2. POST /system/applications/:applicationId/score
+3. GET /recruiter/jobs/:jobId/candidates/ranked
+4. POST /recruiter/applications/:applicationId/recover-hidden
+
+### End-to-End Flow
+```
+Application created
+-> scoring run
+-> score + explanation store
+-> threshold check
+-> pipeline বা hidden pool route
+```
+
+---
+
+## 7. HIRING PIPELINE — KANBAN + LIST VIEW
+
+### Recruiter এর অভিজ্ঞতা:
+```
+Kanban columns:
+- REVIEW (UI label: Shortlisted)
+- INTERVIEW
+- OFFER
+- HIRED
+- REJECTED
+
+Card drag করলে:
+- stage move
+- timestamp save
+- recruiter note save option
+- auto notification trigger
+```
+
+### List View অভিজ্ঞতা:
+```
+Columns:
+Name | Score | Stage | Applied Date | Experience | Actions
+
+Features:
+- sortable columns
+- bulk move
+- bulk reject
+- quick profile drawer
+```
+
+### Candidate এর অভিজ্ঞতা:
+```
+Application status tracker এ stage update দেখে
+```
+
+### Admin এর অভিজ্ঞতা:
+```
+Pipeline audit trail দেখে
+-> unusual jump detect করে
+```
+
+### Industry Standard Implementation
+- Stage transition matrix (invalid move block)
+- Optimistic concurrency (version check)
+- Conflict হলে 409
+- Realtime sync via Socket.IO
+
+### MVC Implementation Steps
+
+#### Models
+1. Application (currentStage, stageHistory, version)
+2. ActivityLog
+
+#### Controllers
+1. PipelineController
+
+#### Services
+1. StageTransitionService
+2. StagePolicyService
+3. PipelineAuditService
+4. RealtimeSyncService
+
+#### Routes
+1. PATCH /recruiter/applications/:applicationId/stage
+2. GET /recruiter/jobs/:jobId/pipeline
+
+### End-to-End Flow
+```
+Stage change request
+-> matrix validation
+-> version check
+-> update + log
+-> realtime broadcast
+-> notification trigger
+```
+
+---
+
+## 8. ADVANCED SEARCH, FILTERS & SKILL-BASED SORTING
+
+### Recruiter এর অভিজ্ঞতা:
+```
+Filter bar:
+- search (alias ভিত্তিক)
+- skills multi-select
+- experience slider
+- min match score
+- stage filter
+- applied date range
+- education filter
+
+Extra:
+- natural language search ("React developer 3 years")
+- saved filters (e.g. "Senior React Profiles")
+- one-click reuse
+```
+
+### Candidate এর অভিজ্ঞতা:
+```
+নিজ application list দেখতে পায়
+-> recruiter internal filter/search data দেখতে পায় না
+```
+
+### Admin এর অভিজ্ঞতা:
+```
+Recruiter filter usage এবং search efficiency দেখে
+```
+
+### Industry Standard Implementation
+- URL-synced filters
+- shareable filter links
+- recruiter email/phone search blocked
+- paginated sorted result consistency
+
+### MVC Implementation Steps
+
+#### Models
+1. Application
+2. SavedFilter
+
+#### Controllers
+1. RecruiterTrackingController
+2. SavedFilterController
+
+#### Services
+1. SearchService
+2. FilterStateService
+
+#### Routes
+1. GET /recruiter/jobs/:jobId/tracking
+2. POST /recruiter/filters/save
+3. GET /recruiter/filters
+
+### End-to-End Flow
+```
+Recruiter filters apply
+-> query build
+-> result fetch
+-> save filter optional
+-> reuse/share later
+```
+
+---
+
+## 9. AUTOMATED EMAIL ALERTS & APPLICATION NOTIFICATIONS
+
+### Candidate কোন email পাবে:
+```
+1. Registration verify
+2. Application received
+3. Stage moved (Review/Interview/Offer)
+4. Final rejected
+5. Hired
+```
+
+### Recruiter কোন notification পাবে:
+```
+1. New application
+2. High score candidate alert
+3. Job deadline reminder
+4. Daily digest (optional)
+```
+
+### Admin এর অভিজ্ঞতা:
+```
+Template manage করে
+-> delivery status monitor করে
+-> failed queue retry trigger করে
+```
+
+### Email Design Rules
+- Company branded template
+- Mobile-friendly HTML
+- clear CTA button
+- transactional vs optional mail classification
+
+### Unsubscribe Rules
+- Transactional: unsubscribe নেই
+- Optional/digest: unsubscribe required
+
+### Industry Standard Implementation
+- Event-driven notification map
+- Queue + retry + idempotency key
+- Notification preferences support
+
+NotificationPreference control rules:
+- Candidate: application status related optional emails on/off
+- Recruiter: daily digest on/off, high score alert on/off
+- Admin: transactional mails mandatory (preference override নেই)
+
+### MVC Implementation Steps
+
+#### Models
+1. Notification
+2. EmailTemplate
+3. NotificationPreference
+
+#### Controllers
+1. NotificationController
+2. EmailTemplateController
+
+#### Services
+1. NotificationEventMapService
+2. EmailDispatchService
+3. InAppNotificationService
+
+#### Routes
+1. GET /me/notifications
+2. PATCH /me/notifications/:id/read
+3. GET /admin/email-templates
+4. PATCH /admin/email-templates/:id
+
+### End-to-End Flow
+```
+Business event
+-> queue publish
+-> email/in-app render
+-> send/store
+-> delivery status update
+```
+
+---
+
+## 10. ANALYTICS DASHBOARD
+
+### Recruiter Dashboard
+```
+Overview cards:
+- Total applications
+- Reviewed
+- Hired
+- Avg time to hire
+
+Visuals:
+- Hiring funnel
+- Top skills in applications
+- Recent activity feed
+- Date range filters
+```
+
+### Admin Dashboard
+```
+Platform overview:
+- Active jobs
+- Total candidates
+- Total recruiters
+- Monthly hires
+
+Recruiter performance table:
+- jobs posted
+- hires
+- avg processing time
+```
+
+### Candidate Dashboard (analytics scope)
+```
+Candidate only personal application summary দেখে
+```
+
+### Industry Standard Implementation
+- KPI definitions locked before release
+- recruiter/admin metric source alignment
+- interactive charts + drill-down
+- CSV/XLSX export
+
+AnalyticsEvent tracked events (minimum set):
+- job.published
+- application.created
+- application.stage_changed
+- candidate.hired
+- candidate.rejected
+
+### MVC Implementation Steps
+
+#### Models
+1. AnalyticsEvent
+2. AnalyticsSnapshot
+
+#### Controllers
+1. RecruiterAnalyticsController
+2. AdminAnalyticsController
+
+#### Services
+1. FunnelMetricsService
+2. RecruiterPerformanceService
+3. AnalyticsExportService
+
+#### Routes
+1. GET /recruiter/analytics/overview
+2. GET /admin/analytics/platform
+3. GET /admin/analytics/recruiters
+4. GET /admin/analytics/export
+
+### End-to-End Flow
+```
+Events ingest
+-> metric aggregation
+-> dashboard APIs
+-> chart rendering
+-> export download
+```
+
+---
+
+## 🏆 OVERALL INDUSTRY STANDARD UX PRINCIPLES
+
+1. Speed
+- Core pages <2s target
+- search response ~300ms target
+
+2. Empty States
+- blank screen না, actionable helper message
+
+3. Error Handling
+- clear human-readable error copy
+- technical trace end-user কে না দেখানো
+
+4. Loading States
+- skeleton বা progress states
+
+5. Mobile Experience
+- responsive recruiter and candidate flows
+- touch-friendly actions for list/kanban interactions
+
+6. Onboarding
+- recruiter first-login checklist:
+  - account setup
+  - first job post
+  - notification setup
+  - team invite
+
+---
+
+## Final Serial Implementation Order
+1. Multi-Role Auth
+2. Smart Job Posting
+3. Public Job Board
+4. Application + CV Upload
+5. Resume Parsing
+6. Match Scoring + Ranking
+7. Pipeline (Kanban + List)
+8. Advanced Search/Filters
+9. Notifications
+10. Analytics
+
+---
+
+## Release Checklist
+1. Recruiter invite ছাড়া recruiter onboarding possible না
+2. Session TTL rules ঠিকভাবে কাজ করে
+3. jobType/workplaceType filters ঠিকভাবে কাজ করে
+4. Hidden Pool candidate এ auto rejection mail যায় না
+5. Recruiter API তে candidate PII masked
+6. Invalid stage move blocked
+7. Stage update concurrency conflict এ 409
+8. Score versioning + explanation visible
+9. Notification retries working
+10. Recruiter/Admin analytics consistent
+11. AI parsing accuracy test set এ 80%+ verified
+12. Email delivery inbox/spam check pass
+13. Realtime pipeline sync test (2 browser) pass
+14. Same input এ deterministic score consistency pass
+15. Mobile responsive test pass (iOS Safari + Android Chrome)
+
+
+
+
