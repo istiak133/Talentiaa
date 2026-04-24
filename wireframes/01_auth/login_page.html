@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wireframe — Login Page</title>
+  <link rel="stylesheet" href="../wireframe_style.css">
+  <style>
+    .login-container { display: flex; align-items: center; justify-content: center; min-height: 744px; background: #fafafa; }
+    .login-card { width: 400px; border: 1.5px solid #333; border-radius: 8px; padding: 40px 32px; background: #fff; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; }
+    .or-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: #999; font-size: 13px; }
+    .or-divider::before, .or-divider::after { content: ''; flex: 1; border-top: 1px solid #ccc; }
+    .google-btn { width: 100%; border: 1.5px solid #333; background: #fff; padding: 10px; font-size: 14px; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .google-icon { width: 18px; height: 18px; border: 1px solid #999; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <span class="page-title">01_auth / login_page.html</span>
+    
+    <nav class="navbar">
+      <div class="nav-logo">Talentiaa</div>
+      <div class="nav-links"><span>Jobs</span><span>For Employers</span><span>About</span></div>
+      <div class="nav-actions"><div class="btn-ghost">Log In</div><div class="btn-primary">Sign Up</div></div>
+    </nav>
+
+    <div class="login-container">
+      <div class="login-card">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div class="heading-lg" style="margin-bottom: 8px;">Talentiaa</div>
+          <div class="text-body">Log in to your account</div>
+        </div>
+        <div class="form-group"><label>Email</label><div class="input">you@example.com</div></div>
+        <div class="form-group"><label>Password</label><div class="input flex-between"><span>••••••••</span><span style="font-size: 12px; color: #999;">👁</span></div></div>
+        <div class="flex-between mb-16 font-13" style="color:#555;font-size:13px;"><div class="flex gap-8"><div class="checkbox"></div>Remember me</div><a href="#" style="color:#333;">Forgot Password?</a></div>
+        <div class="btn-primary w-full" style="text-align: center; padding: 12px;">Log In</div>
+        <div class="or-divider">or</div>
+        <div class="google-btn"><div class="google-icon">G</div> Continue with Google</div>
+        <div style="text-align:center;margin-top:16px;font-size:13px;color:#888;">Don't have an account? <a href="#" style="color:#333;font-weight:600;text-decoration:underline;">Sign Up</a></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

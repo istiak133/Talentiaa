@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wireframe — Landing Page</title>
+  <link rel="stylesheet" href="../wireframe_style.css">
+  <style>
+    .hero { display: flex; align-items: center; padding: 60px 60px; gap: 60px; border-bottom: 1px solid #ddd; min-height: 420px; }
+    .hero-text { flex: 1; }
+    .hero-image { width: 480px; height: 300px; border: 1.5px solid #333; background: #e8e8e8; position: relative; display: flex; align-items: center; justify-content: center; }
+    .hero-image::before, .hero-image::after { content: ''; position: absolute; background: #ccc; }
+    .hero-image::before { width: 100%; height: 1px; transform: rotate(20deg); }
+    .hero-image::after { width: 100%; height: 1px; transform: rotate(-20deg); }
+    .cta-row { display: flex; gap: 12px; margin-top: 24px; }
+    .features-section { padding: 48px 60px; border-bottom: 1px solid #ddd; }
+    .features-grid { display: flex; gap: 24px; margin-top: 24px; }
+    .feature-card { flex: 1; border: 1.5px solid #333; border-radius: 6px; padding: 24px; }
+    .feature-icon { width: 48px; height: 48px; border: 1.5px solid #333; border-radius: 6px; background: #e8e8e8; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .how-section { padding: 48px 60px; border-bottom: 1px solid #ddd; }
+    .steps-row { display: flex; gap: 40px; margin-top: 24px; }
+    .step { flex: 1; text-align: center; }
+    .step-num { width: 40px; height: 40px; border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; margin: 0 auto 12px; }
+    .stats-section { padding: 32px 60px; display: flex; justify-content: center; gap: 60px; border-bottom: 1px solid #ddd; }
+    .stat-item { text-align: center; }
+    .stat-big { font-size: 32px; font-weight: 700; color: #222; }
+    .footer { padding: 32px 60px; display: flex; gap: 60px; background: #f5f5f5; border-top: 1.5px solid #333; }
+    .footer-col { flex: 1; }
+    .footer-col h4 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+    .footer-col p { font-size: 13px; color: #888; line-height: 2; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <span class="page-title">02_landing / landing_page.html</span>
+    <nav class="navbar"><div class="nav-logo">Talentiaa</div><div class="nav-links"><span>Jobs</span><span>For Employers</span><span>Pricing</span></div><div class="nav-actions"><div class="btn-ghost">Log In</div><div class="btn-primary">Sign Up</div></div></nav>
+    <div class="hero"><div class="hero-text"><div class="heading-xl">Hire Smarter<br>with AI</div><p class="text-body mt-12" style="max-width: 400px; color: #666;">AI-powered recruitment platform. Post jobs, parse resumes, score candidates, and manage your hiring pipeline.</p><div class="cta-row"><div class="btn-primary">Find Jobs</div><div class="btn-secondary">Post a Job</div></div></div><div class="hero-image"><span style="color:#999;font-size:14px;z-index:1;">[Dashboard Preview Image]</span></div></div>
+    <div class="features-section"><div class="heading-lg" style="text-align: center;">Key Features</div><div class="features-grid"><div class="feature-card"><div class="feature-icon">📄</div><div class="heading-sm">AI Resume Parsing</div><p class="text-body mt-8">Upload a CV and AI automatically extracts data.</p></div><div class="feature-card"><div class="feature-icon">🎯</div><div class="heading-sm">Smart Match Scoring</div><p class="text-body mt-8">AI scores candidates against job requirements.</p></div><div class="feature-card"><div class="feature-icon">📊</div><div class="heading-sm">Hiring Pipeline</div><p class="text-body mt-8">Kanban board to track candidate stages.</p></div></div></div>
+    <div class="how-section"><div class="heading-lg" style="text-align: center;">How It Works</div><div class="steps-row"><div class="step"><div class="step-num">1</div><div class="heading-sm">Post a Job</div></div><div class="step"><div class="step-num">2</div><div class="heading-sm">Candidates Apply</div></div><div class="step"><div class="step-num">3</div><div class="heading-sm">AI Ranks & You Hire</div></div></div></div>
+    <div class="stats-section"><div class="stat-item"><div class="stat-big">500+</div><div class="text-small">Companies</div></div><div class="stat-item"><div class="stat-big">10K+</div><div class="text-small">Jobs</div></div><div class="stat-item"><div class="stat-big">50K+</div><div class="text-small">Candidates</div></div></div>
+    <div class="footer"><div class="footer-col"><h4>Talentiaa</h4><p>AI recruitment platform.</p></div><div class="footer-col"><h4>Product</h4><p>Jobs<br>For Employers</p></div><div class="footer-col"><h4>Company</h4><p>About<br>Contact</p></div><div class="footer-col"><h4>Legal</h4><p>Privacy Policy</p></div></div>
+  </div>
+</body>
+</html>

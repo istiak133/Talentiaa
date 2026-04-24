@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wireframe — Job Board</title>
+  <link rel="stylesheet" href="../wireframe_style.css">
+  <style>
+    .search-section { padding: 24px 40px; border-bottom: 1.5px solid #333; background: #f5f5f5; }
+    .search-row { display: flex; gap: 12px; margin-bottom: 16px; }
+    .filter-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .filter-chip { border: 1px solid #999; background: #fff; padding: 6px 14px; border-radius: 16px; font-size: 12px; color: #555; }
+    .filter-chip.active { border-color: #333; background: #333; color: #fff; }
+    .results-layout { display: flex; min-height: 600px; }
+    .job-list { width: 480px; border-right: 1.5px solid #333; overflow-y: auto; }
+    .job-card { padding: 16px 20px; border-bottom: 1px solid #ddd; cursor: pointer; }
+    .job-card.selected { background: #f0f0f0; border-left: 3px solid #333; }
+    .job-card .job-title { font-size: 16px; font-weight: 700; color: #222; }
+    .job-card .company { font-size: 13px; color: #666; margin-top: 2px; }
+    .job-card .meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .job-card .snippet { font-size: 12px; color: #888; margin-top: 8px; line-height: 1.5; }
+    .job-card .posted { font-size: 11px; color: #aaa; margin-top: 6px; }
+    .job-detail { flex: 1; padding: 32px; overflow-y: auto; }
+    .skill-tag { border: 1px solid #333; border-radius: 4px; padding: 3px 10px; font-size: 12px; display: inline-block; margin: 3px 2px; }
+    .req-list { margin-top: 8px; padding-left: 20px; }
+    .req-list li { font-size: 14px; color: #555; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <span class="page-title">03_candidate / job_board.html</span>
+    <nav class="navbar"><div class="nav-logo">Talentiaa</div><div class="nav-links"><span>Jobs</span><span>Companies</span></div><div class="nav-actions"><div class="btn-ghost">Log In</div><div class="btn-primary">Register</div></div></nav>
+    <div class="search-section">
+      <div class="search-row"><div class="input" style="flex:2;">🔍 Job title, skills</div><div class="input" style="flex:1;">📍 Location</div><div class="btn-primary">Search</div></div>
+      <div class="filter-row"><div class="filter-chip active">All</div><div class="filter-chip">Full-time</div><div class="filter-chip">Remote</div><div class="filter-chip">Senior</div></div>
+    </div>
+    <div class="results-layout">
+      <div class="job-list">
+        <div style="padding: 12px 20px; font-size: 13px; color: #888; border-bottom: 1px solid #ddd;">Showing 1-10 of 248 jobs</div>
+        <div class="job-card selected"><div class="job-title">Senior Software Engineer</div><div class="company">TechCorp Inc. · San Francisco, CA</div><div class="meta"><span class="badge badge-outline">Full-time</span><span class="badge badge-outline">Remote</span></div><div class="snippet">Looking for an experienced engineer to build scalable applications...</div><div class="posted">2 days ago</div></div>
+        <div class="job-card"><div class="job-title">Product Manager</div><div class="company">Innovate Tech · Seattle, WA</div><div class="meta"><span class="badge badge-outline">Hybrid</span></div><div class="snippet">Seeking a strategic PM to lead our product roadmap...</div><div class="posted">3 days ago</div></div>
+      </div>
+      <div class="job-detail">
+        <div class="heading-lg">Senior Software Engineer</div>
+        <div style="font-size:15px;color:#666;margin-top:4px;">TechCorp Inc. · San Francisco, CA · 2 days ago</div>
+        <hr class="divider">
+        <div class="heading-sm mt-16">Job Description</div>
+        <p class="text-body mt-8">We are looking for an experienced Senior Software Engineer...</p>
+        <div class="heading-sm mt-24">Requirements</div>
+        <ul class="req-list"><li>5+ years experience</li><li>Proficiency in React and Node.js</li><li>AWS knowledge</li></ul>
+        <div class="heading-sm mt-24">Required Skills</div>
+        <div style="margin-top:8px;"><span class="skill-tag">React</span><span class="skill-tag">Node.js</span><span class="skill-tag">AWS</span></div>
+        <div class="mt-24"><div class="btn-primary" style="display:inline-block;padding:14px 48px;">Apply Now</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

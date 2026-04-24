@@ -19,8 +19,8 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, fullName: string, requestedRole?: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null; profile: UserProfile | null }>;
   signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -37,26 +37,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
   });
 
-  // Fetch user profile from public.users with retry logic to handle DB trigger latency
+  // Fetch user profile using native fetch to avoid Supabase JS Lock issues
   const fetchProfile = useCallback(async (userId: string, retries = 3): Promise<UserProfile | null> => {
-    for (let i = 0; i < retries; i++) {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, role, full_name, email, email_verified, account_status, avatar_url, created_at')
-        .eq('id', userId)
-        .single();
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      if (!error && data) {
-        return data as UserProfile;
-      }
-      
-      // If error is "PGRST116" (not found) and we have retries left, wait and try again
+    // Get JWT from localStorage directly to avoid Lock
+    let jwt = '';
+    const storageKeys = Object.keys(localStorage).filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+    if (storageKeys.length > 0) {
+      try {
+        const data = JSON.parse(localStorage.getItem(storageKeys[0]) || '{}');
+        jwt = data?.access_token || '';
+      } catch { /* ignore */ }
+    }
+
+    if (!jwt) {
+      // Fallback: try supabase client (may hit Lock but worth trying)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        jwt = session?.access_token || '';
+      } catch { /* ignore */ }
+    }
+
+    if (!jwt) return null;
+
+    for (let i = 0; i < retries; i++) {
+      try {
+        const res = await fetch(
+          `${supabaseUrl}/rest/v1/users?id=eq.${userId}&select=id,role,full_name,email,email_verified,account_status,avatar_url,created_at`,
+          {
+            headers: {
+              'apikey': anonKey,
+              'Authorization': `Bearer ${jwt}`,
+              'Accept': 'application/json',
+            },
+          }
+        );
+
+        if (res.ok) {
+          const rows = await res.json();
+          if (rows.length > 0) return rows[0] as UserProfile;
+        }
+      } catch { /* ignore */ }
+
       if (i < retries - 1) {
-        console.log(`Profile not found yet, retrying... (${i + 1}/${retries})`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // wait 1s
-      } else {
-        console.error('Error fetching profile after retries:', error?.message);
-        return null;
+        await new Promise(r => setTimeout(r, 1000));
       }
     }
     return null;
@@ -121,13 +147,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
-  // Sign up as candidate
-  const signUp = async (email: string, password: string, fullName: string) => {
+  // Sign up user with requested role
+  const signUp = async (email: string, password: string, fullName: string, requestedRole: string = 'candidate') => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, requested_role: requestedRole },
       },
     });
 
@@ -149,28 +175,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
-        return { error: 'ইমেইল অথবা পাসওয়ার্ড ভুল হয়েছে।' };
+        return { error: 'ইমেইল অথবা পাসওয়ার্ড ভুল হয়েছে।', profile: null };
       }
       if (error.message.includes('Email not confirmed')) {
-        return { error: 'অনুগ্রহ করে আগে আপনার ইমেইল verify করুন।' };
+        return { error: 'অনুগ্রহ করে আগে আপনার ইমেইল verify করুন।', profile: null };
       }
-      return { error: error.message };
+      return { error: error.message, profile: null };
     }
 
     // Check account status
+    let profile: UserProfile | null = null;
     if (data.user) {
-      const profile = await fetchProfile(data.user.id);
+      profile = await fetchProfile(data.user.id);
       if (profile?.account_status === 'suspended') {
         await supabase.auth.signOut();
-        return { error: 'আপনার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে। অ্যাডমিনের সাথে যোগাযোগ করুন।' };
+        return { error: 'আপনার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে। অ্যাডমিনের সাথে যোগাযোগ করুন।', profile: null };
       }
       if (profile?.account_status === 'rejected') {
         await supabase.auth.signOut();
-        return { error: 'আপনার অ্যাকাউন্ট রিজেক্ট করা হয়েছে।' };
+        return { error: 'আপনার অ্যাকাউন্ট রিজেক্ট করা হয়েছে।', profile: null };
       }
     }
 
-    return { error: null };
+    return { error: null, profile };
   };
 
   // Sign in with Google OAuth

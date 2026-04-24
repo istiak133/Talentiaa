@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wireframe — Candidate Dashboard</title>
+  <link rel="stylesheet" href="../wireframe_style.css">
+  <style>
+    .main-content { padding: 32px 40px; background: #fafafa; min-height: 744px; }
+    .welcome-banner { border: 1.5px solid #333; border-radius: 6px; padding: 20px 24px; background: #fff; margin-bottom: 24px; }
+    .progress-bar { height: 8px; background: #e0e0e0; border-radius: 4px; margin-top: 8px; position: relative; }
+    .progress-fill { height: 100%; width: 78%; background: #333; border-radius: 4px; }
+    .stats-row { display: flex; gap: 16px; margin-bottom: 24px; }
+    .content-cols { display: flex; gap: 24px; }
+    .app-card { border: 1.5px solid #ddd; border-radius: 6px; padding: 14px; background: #fff; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+    .app-card .company-logo { width: 40px; height: 40px; border: 1.5px solid #333; border-radius: 6px; background: #e8e8e8; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; }
+    .app-card .app-info { flex: 1; }
+    .app-card .job-name { font-size: 14px; font-weight: 600; }
+    .app-card .company-name { font-size: 12px; color: #888; }
+    .status-badge { display: inline-block; padding: 2px 8px; border: 1px solid #333; border-radius: 3px; font-size: 10px; font-weight: 600; }
+    .rec-card { border: 1.5px solid #ddd; border-radius: 6px; padding: 14px; background: #fff; margin-bottom: 10px; }
+    .match-badge { display: inline-block; border: 1.5px solid #333; background: #333; color: #fff; padding: 2px 8px; border-radius: 3px; font-size: 11px; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <span class="page-title">03_candidate / candidate_dashboard.html</span>
+    <nav class="navbar"><div class="nav-logo">Talentiaa</div><div style="flex:1"></div><div class="nav-actions gap-16"><div class="input" style="width: 240px; height: 34px; font-size: 12px;">🔍 Search jobs</div><div class="flex gap-8" style="align-items:center;"><div class="avatar">A</div><span class="text-small">Alex J. ▾</span></div></div></nav>
+    <div class="main-content">
+      <div class="welcome-banner"><div class="flex-between"><div><div class="heading-lg">Welcome back, Alex!</div><div class="text-small mt-8">Profile 78% Complete</div><div class="progress-bar"><div class="progress-fill"></div></div></div><div class="btn-secondary">Edit Profile</div></div></div>
+      <div class="stats-row">
+        <div class="stat-card" style="flex:1"><div class="text-label">Apps Sent</div><div class="stat-number">5</div></div>
+        <div class="stat-card" style="flex:1"><div class="text-label">Interviews</div><div class="stat-number">2</div></div>
+        <div class="stat-card" style="flex:1"><div class="text-label">Views</div><div class="stat-number">34</div></div>
+      </div>
+      <div class="content-cols">
+        <div style="flex: 3;">
+          <div class="heading-md mb-8">My Applications</div>
+          <div class="app-card"><div class="company-logo">G</div><div class="app-info"><div class="job-name">Software Engineer</div><div class="company-name">Google</div><div style="font-size:11px;color:#aaa;margin-top:4px;">Applied: Oct 20 | <span class="status-badge" style="background:#333;color:#fff;">Interview Scheduled</span></div></div></div>
+          <div class="app-card"><div class="company-logo">S</div><div class="app-info"><div class="job-name">Product Designer</div><div class="company-name">Spotify</div><div style="font-size:11px;color:#aaa;margin-top:4px;">Applied: Oct 18 | <span class="status-badge">Under Review</span></div></div></div>
+        </div>
+        <div style="flex: 2;">
+          <div class="heading-md mb-8">Recommended Jobs</div>
+          <div class="rec-card"><div class="match-badge">96% Match</div><div class="heading-sm">UI/UX Designer</div><div class="text-small">Airbnb</div></div>
+          <div class="rec-card"><div class="match-badge">91% Match</div><div class="heading-sm">Frontend Dev</div><div class="text-small">Netflix</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

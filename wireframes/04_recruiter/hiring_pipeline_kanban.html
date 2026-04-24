@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wireframe — Hiring Pipeline</title>
+  <link rel="stylesheet" href="../wireframe_style.css">
+  <style>
+    .layout { display: flex; } .main { flex: 1; padding: 24px; background: #fafafa; }
+    .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .job-selector { border: 1.5px solid #333; padding: 8px 16px; border-radius: 4px; font-size: 14px; background: #fff; }
+    .kanban-board { display: flex; gap: 12px; min-height: 550px; }
+    .kanban-column { flex: 1; background: #f0f0f0; border: 1.5px solid #ddd; border-radius: 6px; padding: 12px; }
+    .col-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 2px solid #333; margin-bottom: 10px; }
+    .col-title { font-size: 13px; font-weight: 700; text-transform: uppercase; }
+    .candidate-card { border: 1.5px solid #ccc; background: #fff; border-radius: 6px; padding: 12px; margin-bottom: 8px; cursor: grab; }
+    .card-score { border: 1px solid #333; border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; float: right; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <span class="page-title">04_recruiter / hiring_pipeline_kanban.html</span>
+    <nav class="navbar"><div class="nav-logo">Talentiaa</div><div style="flex:1"></div><div class="nav-actions"><div class="avatar">S</div></div></nav>
+    <div class="layout">
+      <div class="sidebar"><div class="sidebar-item">Dashboard</div><div class="sidebar-item">Jobs</div><div class="sidebar-item">Candidates</div><div class="sidebar-item active">Pipeline</div></div>
+      <div class="main">
+        <div class="top-bar">
+          <div class="flex gap-16" style="align-items: center;"><div class="heading-lg">Pipeline</div><div class="job-selector">Senior Software Engineer ▾</div></div>
+        </div>
+        <div class="kanban-board">
+          <div class="kanban-column"><div class="col-header"><span class="col-title">Review</span><span>12</span></div><div class="candidate-card"><span class="card-score">92%</span><div style="font-weight:600;font-size:13px;margin-bottom:8px;">Alex Rahman</div><div style="font-size:11px;color:#aaa;">React, Node.js</div></div><div class="candidate-card"><span class="card-score">88%</span><div style="font-weight:600;font-size:13px;margin-bottom:8px;">Maria Khan</div></div></div>
+          <div class="kanban-column"><div class="col-header"><span class="col-title">Interview</span><span>5</span></div><div class="candidate-card"><span class="card-score">90%</span><div style="font-weight:600;font-size:13px;margin-bottom:8px;">Sara Tanvir</div><div style="font-size:11px;color:#888;text-decoration:underline;margin-top:8px;">📝 Add note</div></div></div>
+          <div class="kanban-column"><div class="col-header"><span class="col-title">Offer</span><span>2</span></div><div class="candidate-card"><span class="card-score">93%</span><div style="font-weight:600;font-size:13px;margin-bottom:8px;">Chloe Brown</div></div></div>
+          <div class="kanban-column"><div class="col-header"><span class="col-title">Hired</span><span>1</span></div><div class="candidate-card"><span class="card-score">95%</span><div style="font-weight:600;font-size:13px;margin-bottom:8px;">Noah Miller</div></div></div>
+          <div class="kanban-column"><div class="col-header"><span class="col-title">Rejected</span><span>3</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

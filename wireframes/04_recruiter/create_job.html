@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wireframe — Create Job</title>
+  <link rel="stylesheet" href="../wireframe_style.css">
+  <style>
+    .layout { display: flex; } .main { flex: 1; padding: 24px 32px; background: #fafafa; }
+    .steps-bar { display: flex; align-items: center; gap: 0; margin-bottom: 32px; padding: 16px 0; border-bottom: 1px solid #ddd; }
+    .step-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #aaa; }
+    .step-item.active { color: #222; font-weight: 700; }
+    .step-circle { width: 28px; height: 28px; border: 2px solid #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .step-item.active .step-circle { border-color: #333; background: #333; color: #fff; }
+    .step-line { width: 40px; height: 2px; background: #ddd; margin: 0 4px; }
+    .ai-panel { border: 1.5px dashed #999; border-radius: 6px; padding: 16px; background: #fffbf0; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <span class="page-title">04_recruiter / create_job.html</span>
+    <nav class="navbar"><div class="nav-logo">Talentiaa</div><div style="flex:1"></div><div class="nav-actions"><div class="avatar">S</div></div></nav>
+    <div class="layout">
+      <div class="sidebar"><div class="sidebar-item">Dashboard</div><div class="sidebar-item active">Jobs</div><div class="sidebar-item">Candidates</div></div>
+      <div class="main">
+        <div class="heading-lg mb-8">Create New Job</div>
+        <div class="steps-bar">
+          <div class="step-item active"><div class="step-circle">1</div> Basic Info</div><div class="step-line"></div>
+          <div class="step-item"><div class="step-circle">2</div> Description</div><div class="step-line"></div>
+          <div class="step-item"><div class="step-circle">3</div> Scoring</div><div class="step-line"></div>
+          <div class="step-item"><div class="step-circle">4</div> Preview</div>
+        </div>
+        <div class="flex gap-24">
+          <div style="flex: 3;">
+            <div class="form-group"><label>Job Title *</label><div class="input">Senior Software Engineer</div></div>
+            <div class="flex gap-16"><div class="form-group flex-1"><label>Department</label><div class="input">Engineering ▾</div></div><div class="form-group flex-1"><label>Experience Level</label><div class="input">Senior ▾</div></div></div>
+            <div class="form-group"><label>Job Type *</label><div class="flex gap-12"><div style="border:1.5px solid #333;background:#f0f0f0;padding:8px 14px;border-radius:4px;font-size:13px;font-weight:600;"><div class="radio selected"></div> Full-time</div><div style="border:1.5px solid #ddd;padding:8px 14px;border-radius:4px;font-size:13px;"><div class="radio"></div> Part-time</div></div></div>
+            <div class="flex gap-16"><div class="form-group flex-1"><label>Salary Min</label><div class="input">৳ 50,000</div></div><div class="form-group flex-1"><label>Salary Max</label><div class="input">৳ 120,000</div></div></div>
+          </div>
+          <div style="flex: 1; min-width: 260px;">
+            <div class="ai-panel"><div style="font-weight:700;font-size:13px;margin-bottom:8px;">💡 AI Suggestions</div><div style="font-size:12px;background:#fff;border:1px solid #eee;padding:8px;margin-bottom:8px;">✓ Add salary range to get <b>30% more</b> applications</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

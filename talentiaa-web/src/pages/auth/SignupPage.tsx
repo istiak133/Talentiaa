@@ -1,14 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Mail, Lock, Eye, EyeOff, UserPlus, User, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, UserPlus, User, AlertCircle, Building, Briefcase, Award } from 'lucide-react';
 
 export default function SignupPage() {
+  const [role, setRole] = useState<'candidate' | 'recruiter'>('candidate');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Recruiter extra fields
+  const [companyName, setCompanyName] = useState('');
+  const [companyRole, setCompanyRole] = useState('');
+  const [department, setDepartment] = useState('');
+  const [experience, setExperience] = useState('');
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -17,7 +25,7 @@ export default function SignupPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // If there's an invite token in the URL, save it to local storage
+  // If there's an invite token in the URL, ignore it or save it (we are deprecating invites)
   useEffect(() => {
     const token = searchParams.get('invite_token');
     if (token) {
@@ -38,15 +46,22 @@ export default function SignupPage() {
       return;
     }
 
-    setLoading(true);
-    const { error } = await signUp(email, password, fullName);
-
-    if (error) {
-      setError(error);
-      setLoading(false);
-    } else {
-      navigate('/verify-email', { state: { email } });
+    if (role === 'recruiter' && (!companyName || !companyRole || !experience)) {
+      setError('কোম্পানির সকল তথ্য প্রদান করুন।');
+      return;
     }
+
+    setLoading(true);
+    const { error: signUpError } = await signUp(email, password, fullName, role);
+
+    if (signUpError) {
+      setError(signUpError);
+      setLoading(false);
+      return;
+    }
+
+    // Signup successful! Navigate to login page.
+    navigate('/login', { state: { email, message: 'Signup successful! Please log in.' } });
   };
 
   const handleGoogleSignup = async () => {
@@ -74,6 +89,25 @@ export default function SignupPage() {
               <span>{error}</span>
             </div>
           )}
+
+          <div className="role-selector" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <button
+              type="button"
+              className={`btn ${role === 'candidate' ? 'btn-primary' : 'btn-outline'}`}
+              style={{ flex: 1 }}
+              onClick={() => setRole('candidate')}
+            >
+              আমি ক্যান্ডিডেট
+            </button>
+            <button
+              type="button"
+              className={`btn ${role === 'recruiter' ? 'btn-primary' : 'btn-outline'}`}
+              style={{ flex: 1 }}
+              onClick={() => setRole('recruiter')}
+            >
+              আমি রিক্রুটার
+            </button>
+          </div>
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
@@ -107,6 +141,70 @@ export default function SignupPage() {
                 />
               </div>
             </div>
+
+            {role === 'recruiter' && (
+              <>
+                <div className="form-group">
+                  <label htmlFor="companyName">কোম্পানির নাম</label>
+                  <div className="input-wrapper">
+                    <Building size={18} className="input-icon" />
+                    <input
+                      id="companyName"
+                      type="text"
+                      placeholder="কোম্পানির নাম"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="companyRole">আপনার পদবি (Role)</label>
+                  <div className="input-wrapper">
+                    <Briefcase size={18} className="input-icon" />
+                    <input
+                      id="companyRole"
+                      type="text"
+                      placeholder="উদাঃ HR Manager"
+                      value={companyRole}
+                      onChange={(e) => setCompanyRole(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="department">ডিপার্টমেন্ট</label>
+                  <div className="input-wrapper">
+                    <UserPlus size={18} className="input-icon" />
+                    <input
+                      id="department"
+                      type="text"
+                      placeholder="উদাঃ Human Resources"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="experience">অভিজ্ঞতা (বছর)</label>
+                  <div className="input-wrapper">
+                    <Award size={18} className="input-icon" />
+                    <input
+                      id="experience"
+                      type="number"
+                      placeholder="উদাঃ 3"
+                      value={experience}
+                      onChange={(e) => setExperience(e.target.value)}
+                      required
+                      min="0"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="form-group">
               <label htmlFor="password">পাসওয়ার্ড</label>

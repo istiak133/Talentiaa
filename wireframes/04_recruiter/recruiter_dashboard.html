@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wireframe — Recruiter Dashboard</title>
+  <link rel="stylesheet" href="../wireframe_style.css">
+  <style>
+    .layout { display: flex; }
+    .main { flex: 1; padding: 24px; background: #fafafa; }
+    .stats-row { display: flex; gap: 16px; margin-bottom: 24px; }
+    .content-row { display: flex; gap: 24px; }
+    .kanban-col { flex: 1; background: #f0f0f0; border: 1px solid #ddd; border-radius: 4px; padding: 8px; min-height: 200px; }
+    .kanban-card { border: 1px solid #ccc; background: #fff; border-radius: 4px; padding: 8px; margin-bottom: 6px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <span class="page-title">04_recruiter / recruiter_dashboard.html</span>
+    <nav class="navbar"><div class="nav-logo">Talentiaa</div><div style="flex:1"></div><div class="nav-actions gap-16"><div class="avatar">S</div><span class="text-small">Sarah J. ▾</span></div></nav>
+    <div class="layout">
+      <div class="sidebar">
+        <div class="sidebar-item active">Dashboard</div><div class="sidebar-item">Jobs</div><div class="sidebar-item">Candidates</div><div class="sidebar-item">Pipeline</div>
+      </div>
+      <div class="main">
+        <div class="heading-lg mb-8">Dashboard</div>
+        <div class="stats-row">
+          <div class="stat-card" style="flex:1"><div class="text-label">Active Jobs</div><div class="stat-number">12</div></div>
+          <div class="stat-card" style="flex:1"><div class="text-label">Total Applications</div><div class="stat-number">248</div></div>
+          <div class="stat-card" style="flex:1"><div class="text-label">Interviews</div><div class="stat-number">8</div></div>
+        </div>
+        <div class="content-row">
+          <div style="flex: 3;" class="card">
+            <div class="heading-sm mb-16">Recent Applications</div>
+            <table class="table"><thead><tr><th>Candidate</th><th>Job Title</th><th>Match</th><th>Status</th></tr></thead><tbody><tr><td>Alex R.</td><td>Senior SWE</td><td>94%</td><td>Under Review</td></tr><tr><td>Liam S.</td><td>Frontend Dev</td><td>88%</td><td>Interview</td></tr></tbody></table>
+          </div>
+          <div style="flex: 2;" class="card">
+            <div class="heading-sm mb-16">Pipeline Preview</div>
+            <div class="flex gap-8">
+              <div class="kanban-col"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">Review</div><div class="kanban-card">Alex R. 94%</div><div class="kanban-card">Maria 91%</div></div>
+              <div class="kanban-col"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">Interview</div><div class="kanban-card">Liam 88%</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
