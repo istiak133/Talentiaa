@@ -9,6 +9,8 @@ export interface UserProfile {
   email_verified: boolean;
   account_status: AccountStatus;
   avatar_url: string | null;
+  company_name?: string | null;
+  id_card_url?: string | null;
   created_at: string;
 }
 

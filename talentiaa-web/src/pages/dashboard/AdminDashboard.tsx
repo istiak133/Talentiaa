@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { LogOut, Shield, Users, Briefcase, Bell, TrendingUp, CheckCircle2, Clock, Trash2, ShieldAlert, Award } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import emailjs from '@emailjs/browser';
 import type { UserProfile, Job } from '../../types/database';
 import NotificationBell from '../../components/NotificationBell';
 
@@ -13,7 +14,7 @@ export default function AdminDashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'users' | 'jobs'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'jobs' | 'approvals'>('users');
 
   useEffect(() => {
     if (!profile) return;
@@ -47,6 +48,31 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleRecruiterVerification = async (user: UserProfile, action: 'approve' | 'reject') => {
+    const newStatus = action === 'approve' ? 'active' : 'rejected';
+    const { error } = await supabase.from('users').update({ account_status: newStatus }).eq('id', user.id);
+    
+    if (!error) {
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, account_status: newStatus as any } : u));
+      
+      // Send Email
+      if (import.meta.env.VITE_EMAILJS_SERVICE_ID) {
+        emailjs.send(
+          import.meta.env.VITE_EMAILJS_SERVICE_ID,
+          import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+          {
+            candidate_name: user.full_name,
+            job_title: 'Recruiter Account',
+            company_name: 'Talentiaa',
+            status: action === 'approve' ? 'APPROVED! You can now post jobs.' : 'REJECTED. Please contact support.',
+            to_email: user.email
+          },
+          import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+        ).catch(err => console.error('Failed to send email:', err));
+      }
+    }
+  };
+
   const toggleJobStatus = async (jobId: string, currentStatus: string) => {
     const newStatus = currentStatus === 'published' ? 'paused' : 'published';
     const { error } = await supabase.from('jobs').update({ status: newStatus }).eq('id', jobId);
@@ -57,7 +83,8 @@ export default function AdminDashboard() {
 
   // --- Analytics Calculations ---
   const totalCandidates = users.filter(u => u.role === 'candidate').length;
-  const totalRecruiters = users.filter(u => u.role === 'recruiter').length;
+  const totalRecruiters = users.filter(u => u.role === 'recruiter' && u.account_status === 'active').length;
+  const pendingRecruiters = users.filter(u => u.role === 'recruiter' && u.account_status === 'pending');
   const activeJobs = jobs.filter(j => j.status === 'published').length;
   const totalApps = applications.length;
   const hiredApps = applications.filter(a => a.current_stage === 'HIRED').length;
@@ -255,6 +282,15 @@ export default function AdminDashboard() {
             >
               Job Moderation
             </button>
+            <button 
+              onClick={() => setActiveTab('approvals')}
+              style={{ padding: '20px 24px', border: 'none', background: 'none', fontSize: '15px', fontWeight: 600, color: activeTab === 'approvals' ? '#0f172a' : '#64748b', borderBottom: activeTab === 'approvals' ? '2px solid #0f172a' : '2px solid transparent', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              Pending Approvals
+              {pendingRecruiters.length > 0 && (
+                <span style={{ background: '#ef4444', color: '#fff', fontSize: '11px', padding: '2px 8px', borderRadius: '12px' }}>{pendingRecruiters.length}</span>
+              )}
+            </button>
           </div>
 
           <div style={{ padding: '0' }}>
@@ -355,6 +391,63 @@ export default function AdminDashboard() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            )}
+
+            {activeTab === 'approvals' && (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <tr style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <th style={{ padding: '16px 24px', textAlign: 'left' }}>Recruiter Info</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'left' }}>Company</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'center' }}>ID Card</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'right' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingRecruiters.map(r => (
+                    <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
+                      <td style={{ padding: '16px 24px' }}>
+                        <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '14px' }}>{r.full_name}</div>
+                        <div style={{ color: '#64748b', fontSize: '13px' }}>{r.email}</div>
+                      </td>
+                      <td style={{ padding: '16px 24px', color: '#475569', fontSize: '14px', fontWeight: 500 }}>
+                        <ShieldAlert size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                        {r.company_name || 'N/A'}
+                      </td>
+                      <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                        {r.id_card_url ? (
+                          <a href={r.id_card_url} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
+                            View ID Card
+                          </a>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: '13px' }}>Missing</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button 
+                            onClick={() => handleRecruiterVerification(r, 'approve')}
+                            style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: '1px solid #bbf7d0', background: '#dcfce7', color: '#16a34a' }}
+                          >
+                            Approve
+                          </button>
+                          <button 
+                            onClick={() => handleRecruiterVerification(r, 'reject')}
+                            style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: '1px solid #fecaca', background: '#fef2f2', color: '#ef4444' }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {pendingRecruiters.length === 0 && (
+                    <tr>
+                      <td colSpan={4} style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>No pending recruiter approvals.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             )}

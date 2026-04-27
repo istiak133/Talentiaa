@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Mail, Lock, Eye, EyeOff, UserPlus, User, AlertCircle, Building, Briefcase, Award } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, UserPlus, User, AlertCircle, Building, Briefcase, Award, Upload } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 export default function SignupPage() {
   const [role, setRole] = useState<'candidate' | 'recruiter'>('candidate');
@@ -16,6 +17,7 @@ export default function SignupPage() {
   const [companyRole, setCompanyRole] = useState('');
   const [department, setDepartment] = useState('');
   const [experience, setExperience] = useState('');
+  const [idCardFile, setIdCardFile] = useState<File | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,13 +48,42 @@ export default function SignupPage() {
       return;
     }
 
-    if (role === 'recruiter' && (!companyName || !companyRole || !experience)) {
-      setError('কোম্পানির সকল তথ্য প্রদান করুন।');
-      return;
+    if (role === 'recruiter') {
+      if (!companyName || !companyRole || !experience) {
+        setError('কোম্পানির সকল তথ্য প্রদান করুন।');
+        return;
+      }
+      if (!idCardFile) {
+        setError('দয়া করে আপনার কোম্পানির আইডি কার্ড আপলোড করুন।');
+        return;
+      }
     }
 
     setLoading(true);
-    const { error: signUpError } = await signUp(email, password, fullName, role);
+
+    let uploadedIdCardUrl = '';
+
+    if (role === 'recruiter' && idCardFile) {
+      const fileExt = idCardFile.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('id_cards')
+        .upload(fileName, idCardFile);
+
+      if (uploadError) {
+        setError('আইডি কার্ড আপলোড করতে সমস্যা হয়েছে: ' + uploadError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('id_cards')
+        .getPublicUrl(fileName);
+        
+      uploadedIdCardUrl = publicUrlData.publicUrl;
+    }
+
+    const { error: signUpError } = await signUp(email, password, fullName, role, role === 'recruiter' ? companyName : undefined, uploadedIdCardUrl || undefined);
 
     if (signUpError) {
       setError(signUpError);
@@ -202,6 +233,21 @@ export default function SignupPage() {
                       min="0"
                     />
                   </div>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="idCard">কোম্পানির আইডি কার্ড (ছবি)</label>
+                  <div className="input-wrapper" style={{ padding: '8px', border: '1px dashed #cbd5e1', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Upload size={18} className="input-icon" style={{ position: 'static', transform: 'none', color: '#64748b' }} />
+                    <input
+                      id="idCard"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setIdCardFile(e.target.files?.[0] || null)}
+                      required
+                      style={{ paddingLeft: '8px', height: 'auto', background: 'transparent' }}
+                    />
+                  </div>
+                  <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>অ্যাডমিন ম্যানুয়ালি ভেরিফাই করার জন্য এটি ব্যবহার করবেন।</p>
                 </div>
               </>
             )}

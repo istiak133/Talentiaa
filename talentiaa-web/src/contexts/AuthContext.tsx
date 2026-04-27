@@ -19,7 +19,7 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  signUp: (email: string, password: string, fullName: string, requestedRole?: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, fullName: string, requestedRole?: string, companyName?: string, idCardUrl?: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null; profile: UserProfile | null }>;
   signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -148,12 +148,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   // Sign up user with requested role
-  const signUp = async (email: string, password: string, fullName: string, requestedRole: string = 'candidate') => {
+  const signUp = async (email: string, password: string, fullName: string, requestedRole: string = 'candidate', companyName?: string, idCardUrl?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, requested_role: requestedRole },
+        data: { full_name: fullName, requested_role: requestedRole, company_name: companyName, id_card_url: idCardUrl },
       },
     });
 
@@ -194,6 +194,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (profile?.account_status === 'rejected') {
         await supabase.auth.signOut();
         return { error: 'আপনার অ্যাকাউন্ট রিজেক্ট করা হয়েছে।', profile: null };
+      }
+      if (profile?.account_status === 'pending' && profile?.role === 'recruiter') {
+        await supabase.auth.signOut();
+        return { error: 'আপনার অ্যাকাউন্টটি এখনো অ্যাডমিন দ্বারা ভেরিফাই করা হয়নি। অনুগ্রহ করে অপেক্ষা করুন।', profile: null };
       }
     }
 
