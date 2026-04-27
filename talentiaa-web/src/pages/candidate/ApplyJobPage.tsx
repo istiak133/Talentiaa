@@ -16,7 +16,7 @@ export default function ApplyJobPage() {
   const [resumeText, setResumeText] = useState('');
   const [loading, setLoading] = useState(false);
   const [scoring, setScoring] = useState(false);
-  const [score, setScore] = useState<{ score: number; breakdown: any; summary: string } | null>(null);
+  const [score, setScore] = useState<{ score: number; breakdown: any; summary: string; missing_skills?: string[]; improvement_suggestion?: string } | null>(null);
   const [applied, setApplied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,7 +91,11 @@ export default function ApplyJobPage() {
         candidate_id: profile.id,
         resume_id: resumeId,
         score_overall: score?.score ?? null,
-        score_breakdown: score?.breakdown ?? {},
+        score_breakdown: score ? {
+          ...score.breakdown,
+          missing_skills: score.missing_skills,
+          improvement_suggestion: score.improvement_suggestion
+        } : {},
       }]);
       if (appErr) throw appErr;
 
@@ -186,6 +190,28 @@ export default function ApplyJobPage() {
                   </div>
                 ))}
               </div>
+              
+              {score.missing_skills && score.missing_skills.length > 0 && (
+                <div style={{ marginTop: '20px', padding: '16px', background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#b45309', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span role="img" aria-label="alert">⚠️</span> Missing Skills
+                  </h3>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {score.missing_skills.map(s => (
+                      <span key={s} style={{ padding: '4px 10px', background: '#fef3c7', color: '#b45309', borderRadius: '16px', fontSize: '12px', fontWeight: 600 }}>{s}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {score.improvement_suggestion && (
+                <div style={{ marginTop: '16px', padding: '16px', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: '8px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1d4ed8', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span role="img" aria-label="idea">💡</span> AI Suggestion
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#1e3a8a', lineHeight: 1.5 }}>{score.improvement_suggestion}</p>
+                </div>
+              )}
             </div>
           )}
         </div>

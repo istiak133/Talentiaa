@@ -63,8 +63,10 @@ export async function matchResumeToJob(resumeText: string, jobTitle: string, job
   score: number;
   breakdown: { skills: number; experience: number; education: number };
   summary: string;
+  missing_skills: string[];
+  improvement_suggestion: string;
 }> {
-  const prompt = `You are an expert ATS (Applicant Tracking System). Compare this resume against the job posting and give a matching score.
+  const prompt = `You are an expert ATS (Applicant Tracking System) and career coach. Compare this resume against the job posting and give a matching score. Also identify which required skills are missing from the resume, and provide a short suggestion on how the candidate can improve their resume or skillset.
 
 JOB TITLE: ${jobTitle}
 JOB DESCRIPTION: ${jobDescription}
@@ -77,7 +79,9 @@ Return ONLY valid JSON:
 {
   "score": <number 0-100>,
   "breakdown": {"skills": <0-100>, "experience": <0-100>, "education": <0-100>},
-  "summary": "<one sentence>"
+  "summary": "<one sentence overview>",
+  "missing_skills": ["skill1", "skill2"],
+  "improvement_suggestion": "<one sentence advice on what to add or learn>"
 }
 No markdown, ONLY JSON.`;
 
