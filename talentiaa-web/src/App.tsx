@@ -10,6 +10,9 @@ import { OAuthCallback } from './pages/auth/OAuthCallback';
 import CandidateDashboard from './pages/dashboard/CandidateDashboard';
 import RecruiterDashboard from './pages/dashboard/RecruiterDashboard';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
+import CreateJobPage from './pages/recruiter/CreateJobPage';
+import ApplyJobPage from './pages/candidate/ApplyJobPage';
+import JobBoardPage from './pages/public/JobBoardPage';
 
 export default function App() {
   return (
@@ -25,12 +28,23 @@ export default function App() {
           {/* OAuth callback intercepts error hashes before redirect */}
           <Route path="/auth/callback" element={<OAuthCallback />} />
 
+          {/* Public: Job Board */}
+          <Route path="/jobs" element={<JobBoardPage />} />
+
           {/* Protected: Candidate */}
           <Route
             path="/candidate/*"
             element={
               <ProtectedRoute allowedRoles={['candidate']}>
                 <CandidateDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/candidate/apply/:jobId"
+            element={
+              <ProtectedRoute allowedRoles={['candidate']}>
+                <ApplyJobPage />
               </ProtectedRoute>
             }
           />
@@ -41,6 +55,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['recruiter']}>
                 <RecruiterDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recruiter/jobs/create"
+            element={
+              <ProtectedRoute allowedRoles={['recruiter']}>
+                <CreateJobPage />
               </ProtectedRoute>
             }
           />
@@ -55,8 +77,8 @@ export default function App() {
             }
           />
 
-          {/* Root redirect */}
-          <Route path="/" element={<RoleRedirect />} />
+          {/* Root: Public Job Board */}
+          <Route path="/" element={<JobBoardPage />} />
 
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />

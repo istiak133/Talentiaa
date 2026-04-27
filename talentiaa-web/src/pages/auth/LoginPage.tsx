@@ -15,7 +15,9 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
+  const from = new URLSearchParams(location.search).get('redirect')
+    || (location.state as { from?: { pathname: string } })?.from?.pathname
+    || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
