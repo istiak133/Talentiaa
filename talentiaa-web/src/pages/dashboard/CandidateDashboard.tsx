@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { LogOut, FileText, User, TrendingUp, Bell, ChevronDown, ChevronUp, Briefcase, MapPin, Building, ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { LogOut, FileText, TrendingUp, Bell, ChevronDown, ChevronUp, Briefcase, MapPin, Building, ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import type { ApplicationStage } from '../../types/database';
 
 interface ApplicationWithJob {
@@ -16,7 +16,7 @@ interface ApplicationWithJob {
 
 export default function CandidateDashboard() {
   const { profile, signOut } = useAuth();
-  const navigate = useNavigate();
+
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [publishedJobs, setPublishedJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
