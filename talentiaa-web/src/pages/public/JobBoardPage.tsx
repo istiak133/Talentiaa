@@ -230,9 +230,15 @@ export default function JobBoardPage() {
                 <span>👥 Hiring: <b>{selectedJob.hiring_count}</b></span>
               </div>
 
-              <button onClick={() => handleApply(selectedJob.id)} style={{ width: '100%', padding: '14px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: 700, cursor: 'pointer' }}>
-                Apply Now →
-              </button>
+              {(!profile || profile.role === 'candidate') ? (
+                <button onClick={() => handleApply(selectedJob.id)} style={{ width: '100%', padding: '14px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: 700, cursor: 'pointer' }}>
+                  Apply Now →
+                </button>
+              ) : (
+                <div style={{ width: '100%', padding: '14px', background: '#f3f4f6', color: '#6b7280', border: '1px dashed #d1d5db', borderRadius: '10px', fontSize: '14px', fontWeight: 600, textAlign: 'center' }}>
+                  Viewing as {profile.role} (Cannot Apply)
+                </div>
+              )}
             </>
           ) : (
             <div style={{ textAlign: 'center', color: '#9ca3af', paddingTop: '100px' }}>
