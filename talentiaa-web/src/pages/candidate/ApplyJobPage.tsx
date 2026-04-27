@@ -27,16 +27,42 @@ export default function ApplyJobPage() {
       .then(({ data }) => { if (data) setJob(data as Job); });
   }, [jobId]);
 
-  // Read file as text (for PDF we extract what we can, for txt/docx we read directly)
+  // Read file as text (for PDF we extract text, for txt we read directly)
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setResumeFile(file);
     setScore(null);
+    setResumeText('');
+    setError(null);
 
-    // Read as text — works for .txt files. For PDF the user can paste text manually.
-    const text = await file.text();
-    setResumeText(text);
+    if (file.type === 'application/pdf') {
+      try {
+        // Dynamically import pdfjs-dist to avoid loading it on every page
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let extractedText = '';
+        
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = content.items.map((item: any) => item.str).join(' ');
+          extractedText += pageText + '\\n';
+        }
+        
+        setResumeText(extractedText);
+      } catch (err) {
+        console.error('Failed to parse PDF', err);
+        setError('Failed to auto-extract text from PDF. Please paste your resume text manually below for AI Scoring.');
+      }
+    } else {
+      // Read as text — works for .txt files.
+      const text = await file.text();
+      setResumeText(text);
+    }
   };
 
   // AI Score the resume against job

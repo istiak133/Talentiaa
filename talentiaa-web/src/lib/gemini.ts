@@ -1,5 +1,5 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 export async function generateJobPost(jobTitle: string): Promise<{
   department: string;
@@ -29,7 +29,11 @@ Return ONLY valid JSON, no markdown, no explanation.`;
     })
   });
 
-  if (!res.ok) throw new Error('AI request failed');
+  if (!res.ok) {
+    const errorData = await res.text();
+    console.error('Gemini API Error:', errorData);
+    throw new Error('AI request failed. Check API key or quota.');
+  }
 
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -51,7 +55,11 @@ export async function suggestSkills(jobTitle: string, currentSkills: string[]): 
     })
   });
 
-  if (!res.ok) throw new Error('AI request failed');
+  if (!res.ok) {
+    const errorData = await res.text();
+    console.error('Gemini API Error:', errorData);
+    throw new Error('AI request failed. Check API key or quota.');
+  }
 
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
@@ -94,7 +102,11 @@ No markdown, ONLY JSON.`;
     })
   });
 
-  if (!res.ok) throw new Error('AI scoring failed');
+  if (!res.ok) {
+    const errorData = await res.text();
+    console.error('Gemini API Error:', errorData);
+    throw new Error('AI scoring failed. Check API key or quota.');
+  }
 
   const data = await res.json();
   const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
