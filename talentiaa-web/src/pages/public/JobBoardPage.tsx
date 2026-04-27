@@ -89,7 +89,7 @@ export default function JobBoardPage() {
         <h1 style={{ fontSize: '22px', fontWeight: 800, cursor: 'pointer' }} onClick={() => navigate('/')}>Talentiaa</h1>
         <div style={{ display: 'flex', gap: '12px' }}>
           {profile ? (
-            <button onClick={() => navigate('/')} style={btnStyle}>Dashboard</button>
+            <button onClick={() => navigate(profile.role === 'admin' ? '/admin' : profile.role === 'recruiter' ? '/recruiter' : '/candidate')} style={btnStyle}>Dashboard</button>
           ) : (
             <>
               <button onClick={() => navigate('/login')} style={{ ...btnStyle, background: '#fff', color: '#2563eb', border: '1.5px solid #2563eb' }}>Login</button>

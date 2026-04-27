@@ -7,6 +7,7 @@ import SignupPage from './pages/auth/SignupPage';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 import { OAuthCallback } from './pages/auth/OAuthCallback';
 import CandidateDashboard from './pages/dashboard/CandidateDashboard';
+import CandidateProfilePage from './pages/candidate/CandidateProfilePage';
 import RecruiterDashboard from './pages/dashboard/RecruiterDashboard';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
 import CreateJobPage from './pages/recruiter/CreateJobPage';
@@ -36,6 +37,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['candidate']}>
                 <CandidateDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/candidate/profile"
+            element={
+              <ProtectedRoute allowedRoles={['candidate']}>
+                <CandidateProfilePage />
               </ProtectedRoute>
             }
           />

@@ -11,6 +11,12 @@ export interface UserProfile {
   avatar_url: string | null;
   company_name?: string | null;
   id_card_url?: string | null;
+  university?: string | null;
+  major?: string | null;
+  cgpa?: number | null;
+  hometown?: string | null;
+  study_program?: string | null;
+  profile_pic_url?: string | null;
   created_at: string;
 }
 

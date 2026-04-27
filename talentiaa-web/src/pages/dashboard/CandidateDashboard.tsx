@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Link } from 'react-router-dom';
-import { LogOut, FileText, TrendingUp, ChevronDown, ChevronUp, Briefcase, MapPin, Building, ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { LogOut, FileText, TrendingUp, ChevronDown, ChevronUp, Briefcase, MapPin, Building, ArrowRight, CheckCircle2, Clock, XCircle, User } from 'lucide-react';
 import type { ApplicationStage } from '../../types/database';
 import NotificationBell from '../../components/NotificationBell';
 
@@ -17,6 +17,7 @@ interface ApplicationWithJob {
 
 export default function CandidateDashboard() {
   const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [publishedJobs, setPublishedJobs] = useState<any[]>([]);
@@ -61,9 +62,17 @@ export default function CandidateDashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <NotificationBell />
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid #e2e8f0', paddingLeft: '16px' }}>
-              <div style={{ width: '36px', height: '36px', background: '#e0e7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4f46e5', fontWeight: 600 }}>
-                {profile?.full_name?.charAt(0) || 'U'}
-              </div>
+              <button 
+                onClick={() => navigate('/candidate/profile')}
+                style={{ width: '36px', height: '36px', background: '#e0e7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4f46e5', fontWeight: 600, border: 'none', cursor: 'pointer', overflow: 'hidden', padding: 0 }}
+                title="Edit Profile"
+              >
+                {profile?.profile_pic_url ? (
+                  <img src={profile.profile_pic_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  profile?.full_name?.charAt(0) || <User size={18} />
+                )}
+              </button>
               <div style={{ textAlign: 'left', display: 'none' }} className="user-details">
                 <div style={{ fontSize: '14px', fontWeight: 600 }}>{profile?.full_name}</div>
                 <div style={{ fontSize: '12px', color: '#64748b' }}>{profile?.email}</div>
