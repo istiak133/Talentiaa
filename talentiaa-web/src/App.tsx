@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { RoleRedirect } from './components/RoleRedirect';
 import LoginPage from './pages/auth/LoginPage';
 import AdminLoginPage from './pages/auth/AdminLoginPage';
 import SignupPage from './pages/auth/SignupPage';

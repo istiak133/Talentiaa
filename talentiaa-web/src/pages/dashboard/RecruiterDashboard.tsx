@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { LogOut, Briefcase, Users, BarChart3, Bell, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { LogOut, Briefcase, Users, Bell, Plus, ChevronDown, ChevronUp, LayoutList, KanbanSquare } from 'lucide-react';
+import type { ApplicationStage } from '../../types/database';
+import KanbanBoard from '../../components/KanbanBoard';
 
 interface JobWithApplicants {
   id: string;
@@ -17,7 +19,7 @@ interface JobWithApplicants {
 interface Applicant {
   id: string;
   score_overall: number | null;
-  current_stage: string;
+  current_stage: ApplicationStage;
   applied_at: string;
   users: { full_name: string; email: string } | null;
 }
@@ -27,6 +29,8 @@ export default function RecruiterDashboard() {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<JobWithApplicants[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'pipeline'>('list');
+  const [selectedPipelineJobId, setSelectedPipelineJobId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile) return;
@@ -34,7 +38,12 @@ export default function RecruiterDashboard() {
       .select('id, title, status, location, published_at')
       .eq('recruiter_id', profile.id)
       .order('created_at', { ascending: false })
-      .then(({ data }) => { setJobs((data as JobWithApplicants[]) || []); setLoading(false); });
+      .then(({ data }) => { 
+        const fetchedJobs = (data as JobWithApplicants[]) || [];
+        setJobs(fetchedJobs); 
+        setLoading(false); 
+        if (fetchedJobs.length > 0) setSelectedPipelineJobId(fetchedJobs[0].id);
+      });
   }, [profile]);
 
   const toggleJob = async (jobId: string) => {
@@ -55,7 +64,47 @@ export default function RecruiterDashboard() {
     }
   };
 
-  const totalApps = jobs.reduce((s, j) => s + (j._applicants?.length || 0), 0);
+  // Fetch applicants for pipeline view when selected job changes
+  useEffect(() => {
+    if (viewMode === 'pipeline' && selectedPipelineJobId) {
+      const job = jobs.find(j => j.id === selectedPipelineJobId);
+      if (job && !job._applicants) {
+        supabase.from('applications')
+          .select('id, score_overall, current_stage, applied_at, users:candidate_id(full_name, email)')
+          .eq('job_id', selectedPipelineJobId)
+          .order('score_overall', { ascending: false, nullsFirst: false })
+          .then(({ data }) => {
+            setJobs(prev => prev.map(j => j.id === selectedPipelineJobId ? { ...j, _applicants: (data as any) || [] } : j));
+          });
+      }
+    }
+  }, [viewMode, selectedPipelineJobId, jobs]);
+
+  const handleStageChange = async (applicantId: string, newStage: ApplicationStage) => {
+    // Optimistic UI update
+    setJobs(prev => prev.map(job => {
+      if (!job._applicants) return job;
+      return {
+        ...job,
+        _applicants: job._applicants.map(app => 
+          app.id === applicantId ? { ...app, current_stage: newStage } : app
+        )
+      };
+    }));
+
+    // DB update
+    const { error } = await supabase
+      .from('applications')
+      .update({ current_stage: newStage })
+      .eq('id', applicantId);
+      
+    if (error) {
+      console.error('Failed to update stage:', error);
+      // Revert could be handled here if needed
+    }
+  };
+
+
   const activeJobs = jobs.filter(j => j.status === 'published').length;
   const scoreColor = (s: number) => s >= 70 ? '#16a34a' : s >= 50 ? '#ca8a04' : '#dc2626';
 
@@ -109,10 +158,28 @@ export default function RecruiterDashboard() {
 
         {/* Job List with expandable applicants */}
         <div style={{ marginTop: '32px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>📋 My Jobs & Applicants</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 700 }}>📋 My Jobs & Applicants</h3>
+            {jobs.length > 0 && (
+              <div style={{ display: 'flex', background: '#f3f4f6', padding: '4px', borderRadius: '8px', gap: '4px' }}>
+                <button 
+                  onClick={() => setViewMode('list')}
+                  style={{ padding: '6px 12px', border: 'none', background: viewMode === 'list' ? '#fff' : 'transparent', borderRadius: '6px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', boxShadow: viewMode === 'list' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none', color: viewMode === 'list' ? '#111827' : '#6b7280' }}
+                >
+                  <LayoutList size={16} /> List
+                </button>
+                <button 
+                  onClick={() => setViewMode('pipeline')}
+                  style={{ padding: '6px 12px', border: 'none', background: viewMode === 'pipeline' ? '#fff' : 'transparent', borderRadius: '6px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', boxShadow: viewMode === 'pipeline' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none', color: viewMode === 'pipeline' ? '#111827' : '#6b7280' }}
+                >
+                  <KanbanSquare size={16} /> Pipeline
+                </button>
+              </div>
+            )}
+          </div>
           {loading ? <p>Loading...</p> : jobs.length === 0 ? (
             <div className="empty-state"><p>📋 এখনো কোনো জব পোস্ট করা হয়নি। <strong>"নতুন জব পোস্ট করুন"</strong> বাটনে ক্লিক করে শুরু করুন!</p></div>
-          ) : (
+          ) : viewMode === 'list' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {jobs.map(job => (
                 <div key={job.id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
@@ -165,6 +232,31 @@ export default function RecruiterDashboard() {
                   )}
                 </div>
               ))}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', fontWeight: 600 }}>Select Job Pipeline:</span>
+                <select 
+                  value={selectedPipelineJobId || ''} 
+                  onChange={e => setSelectedPipelineJobId(e.target.value)}
+                  style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', outline: 'none', background: '#fff' }}
+                >
+                  {jobs.map(job => (
+                    <option key={job.id} value={job.id}>{job.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px' }}>
+                {selectedPipelineJobId && jobs.find(j => j.id === selectedPipelineJobId)?._applicants ? (
+                  <KanbanBoard 
+                    applicants={jobs.find(j => j.id === selectedPipelineJobId)!._applicants!} 
+                    onStageChange={handleStageChange}
+                  />
+                ) : (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>Loading pipeline...</div>
+                )}
+              </div>
             </div>
           )}
         </div>

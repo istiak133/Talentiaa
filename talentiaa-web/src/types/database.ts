@@ -43,3 +43,14 @@ export interface Job {
   created_at: string;
   updated_at: string;
 }
+
+// Phase 3 & 4: Application Types
+export type ApplicationStage = 'REVIEW' | 'INTERVIEW' | 'OFFER' | 'HIRED' | 'REJECTED';
+
+export interface Applicant {
+  id: string;
+  score_overall: number | null;
+  current_stage: ApplicationStage;
+  applied_at: string;
+  users: { full_name: string; email: string } | null;
+}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { LogOut, FileText, User, TrendingUp, Bell, Search, Briefcase } from 'lucide-react';
+import { LogOut, FileText, User, TrendingUp, Bell } from 'lucide-react';
 
 interface ApplicationWithJob {
   id: string;
