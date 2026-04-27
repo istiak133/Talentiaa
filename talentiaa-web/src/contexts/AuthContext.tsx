@@ -20,6 +20,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   signUp: (email: string, password: string, fullName: string, requestedRole?: string, companyName?: string, idCardUrl?: string) => Promise<{ error: string | null }>;
+  verifyEmailOtp: (email: string, otp: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null; profile: UserProfile | null }>;
   signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -166,6 +167,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   };
 
+  // Verify OTP sent to email during signup
+  const verifyEmailOtp = async (email: string, otp: string) => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: 'signup'
+    });
+
+    if (error) {
+      return { error: 'OTP did not match or has expired.' };
+    }
+    
+    // Successful verification
+    return { error: null };
+  };
+
   // Sign in with email/password
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -237,6 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         ...state,
         signUp,
+        verifyEmailOtp,
         signIn,
         signInWithGoogle,
         signOut,

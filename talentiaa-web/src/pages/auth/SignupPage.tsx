@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Mail, Lock, Eye, EyeOff, UserPlus, User, AlertCircle, Building, Briefcase, Award, Upload } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, UserPlus, User, AlertCircle, Building, Briefcase, Award, Upload, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 export default function SignupPage() {
@@ -23,7 +23,11 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const { signUp, signInWithGoogle } = useAuth();
+  const [showOtpScreen, setShowOtpScreen] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const { signUp, signInWithGoogle, verifyEmailOtp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -91,8 +95,38 @@ export default function SignupPage() {
       return;
     }
 
-    // Signup successful! Navigate to login page.
-    navigate('/login', { state: { email, message: 'Signup successful! Please log in.' } });
+    // Success - show OTP screen instead of navigating
+    setLoading(false);
+    setShowOtpScreen(true);
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    if (otp.length < 6) {
+      setError('দয়া করে সঠিক ৬-ডিজিটের OTP দিন।');
+      setLoading(false);
+      return;
+    }
+
+    const { error: verifyError } = await verifyEmailOtp(email, otp);
+
+    if (verifyError) {
+      setError('OTP did not match or has expired.');
+      setLoading(false);
+      return;
+    }
+
+    // Verification successful
+    setSuccessMessage('Your account has been successfully created. You can login now.');
+    setLoading(false);
+    
+    // Auto redirect to login after a few seconds
+    setTimeout(() => {
+      navigate('/login', { state: { email, message: 'Account verified successfully! Please log in.' } });
+    }, 3000);
   };
 
   const handleGoogleSignup = async () => {
@@ -114,14 +148,55 @@ export default function SignupPage() {
             <p className="auth-subtitle">নতুন অ্যাকাউন্ট তৈরি করুন</p>
           </div>
 
-          {error && (
+          {successMessage ? (
+            <div className="auth-success" style={{ background: '#dcfce7', color: '#16a34a', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
+              <CheckCircle2 size={20} />
+              <span>{successMessage}</span>
+            </div>
+          ) : error && (
             <div className="auth-error">
               <AlertCircle size={18} />
               <span>{error}</span>
             </div>
           )}
 
-          <div className="role-selector" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+          {showOtpScreen && !successMessage ? (
+            <form onSubmit={handleOtpSubmit} className="auth-form" style={{ marginTop: '20px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <div style={{ width: '64px', height: '64px', background: '#eff6ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <Mail size={32} color="#3b82f6" />
+                </div>
+                <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Verify your email</h3>
+                <p style={{ fontSize: '14px', color: '#64748b' }}>We've sent a 6-digit OTP to <br/><strong style={{ color: '#0f172a' }}>{email}</strong></p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="otp" style={{ textAlign: 'center' }}>Enter 6-Digit OTP</label>
+                <div className="input-wrapper" style={{ justifyContent: 'center' }}>
+                  <input
+                    id="otp"
+                    type="text"
+                    maxLength={6}
+                    placeholder="------"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                    required
+                    style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '8px', padding: '12px', fontWeight: 700 }}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: '24px' }}>
+                {loading ? (
+                  <span className="btn-loading"><span className="loading-spinner-sm" /> Verifying...</span>
+                ) : (
+                  <span className="btn-content">Verify Account</span>
+                )}
+              </button>
+            </form>
+          ) : !showOtpScreen && !successMessage ? (
+            <>
+              <div className="role-selector" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
             <button
               type="button"
               className={`btn ${role === 'candidate' ? 'btn-primary' : 'btn-outline'}`}
@@ -327,9 +402,11 @@ export default function SignupPage() {
             )}
           </button>
 
-          <p className="auth-footer">
-            আগেই অ্যাকাউন্ট আছে? <Link to="/login">লগইন করুন</Link>
-          </p>
+            <p className="auth-footer">
+              আগেই অ্যাকাউন্ট আছে? <Link to="/login">লগইন করুন</Link>
+            </p>
+            </>
+          ) : null}
         </div>
 
         <div className="auth-branding">
