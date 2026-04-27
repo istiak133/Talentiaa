@@ -54,3 +54,14 @@ export interface Applicant {
   applied_at: string;
   users: { full_name: string; email: string } | null;
 }
+
+// Phase 9: Notifications
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: string;
+  is_read: boolean;
+  created_at: string;
+}

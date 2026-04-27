@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { LogOut, FileText, TrendingUp, Bell, ChevronDown, ChevronUp, Briefcase, MapPin, Building, ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { LogOut, FileText, TrendingUp, ChevronDown, ChevronUp, Briefcase, MapPin, Building, ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import type { ApplicationStage } from '../../types/database';
+import NotificationBell from '../../components/NotificationBell';
 
 interface ApplicationWithJob {
   id: string;
@@ -58,10 +59,7 @@ export default function CandidateDashboard() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', position: 'relative' }}>
-              <Bell size={20} />
-              <span style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%' }}></span>
-            </button>
+            <NotificationBell />
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid #e2e8f0', paddingLeft: '16px' }}>
               <div style={{ width: '36px', height: '36px', background: '#e0e7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4f46e5', fontWeight: 600 }}>
                 {profile?.full_name?.charAt(0) || 'U'}

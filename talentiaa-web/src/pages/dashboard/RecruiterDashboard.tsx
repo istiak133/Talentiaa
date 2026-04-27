@@ -3,8 +3,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { LogOut, Briefcase, Users, Bell, Plus, ChevronDown, ChevronUp, LayoutList, KanbanSquare } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 import type { ApplicationStage } from '../../types/database';
 import KanbanBoard from '../../components/KanbanBoard';
+import NotificationBell from '../../components/NotificationBell';
 
 interface JobWithApplicants {
   id: string;
@@ -21,6 +23,7 @@ interface Applicant {
   score_overall: number | null;
   current_stage: ApplicationStage;
   applied_at: string;
+  candidate_id: string;
   users: { full_name: string; email: string } | null;
 }
 
@@ -57,7 +60,7 @@ export default function RecruiterDashboard() {
     const job = jobs.find(j => j.id === jobId);
     if (job && !job._applicants) {
       const { data } = await supabase.from('applications')
-        .select('id, score_overall, current_stage, applied_at, users:candidate_id(full_name, email)')
+        .select('id, score_overall, current_stage, applied_at, candidate_id, users:candidate_id(full_name, email)')
         .eq('job_id', jobId)
         .order('score_overall', { ascending: false, nullsFirst: false });
       setJobs(prev => prev.map(j => j.id === jobId ? { ...j, _applicants: (data as any) || [] } : j));
@@ -70,7 +73,7 @@ export default function RecruiterDashboard() {
       const job = jobs.find(j => j.id === selectedPipelineJobId);
       if (job && !job._applicants) {
         supabase.from('applications')
-          .select('id, score_overall, current_stage, applied_at, users:candidate_id(full_name, email)')
+          .select('id, score_overall, current_stage, applied_at, candidate_id, users:candidate_id(full_name, email)')
           .eq('job_id', selectedPipelineJobId)
           .order('score_overall', { ascending: false, nullsFirst: false })
           .then(({ data }) => {
@@ -100,7 +103,57 @@ export default function RecruiterDashboard() {
       
     if (error) {
       console.error('Failed to update stage:', error);
-      // Revert could be handled here if needed
+      return;
+    }
+
+    // Find candidate details for notification
+    let candidateName = 'Candidate';
+    let candidateEmail = '';
+    let candidateId = '';
+    let jobTitle = 'a role';
+    
+    jobs.forEach(j => {
+      if (j._applicants) {
+        const app = j._applicants.find(a => a.id === applicantId);
+        if (app) {
+          candidateName = app.users?.full_name || 'Candidate';
+          candidateEmail = app.users?.email || '';
+          candidateId = app.candidate_id;
+          jobTitle = j.title;
+        }
+      }
+    });
+
+    // 1. Insert In-App Notification
+    if (candidateId) {
+      supabase.from('notifications').insert({
+        user_id: candidateId,
+        title: 'Application Status Updated',
+        message: `Your application for ${jobTitle} is now in ${newStage} stage.`,
+        type: 'application_update'
+      }).then(({ error: nErr }) => {
+        if (nErr) console.error('Failed to send in-app notification', nErr);
+      });
+    }
+
+    // 2. Send Email via EmailJS
+    if (candidateEmail && import.meta.env.VITE_EMAILJS_SERVICE_ID) {
+      emailjs.send(
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        {
+          candidate_name: candidateName,
+          job_title: jobTitle,
+          company_name: 'Talentiaa',
+          status: newStage,
+          to_email: candidateEmail
+        },
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+      ).then(() => {
+        console.log('Email sent successfully to', candidateEmail);
+      }).catch(err => {
+        console.error('Failed to send email:', err);
+      });
     }
   };
 
@@ -116,7 +169,7 @@ export default function RecruiterDashboard() {
           <span className="role-badge role-recruiter">Recruiter</span>
         </div>
         <div className="header-right">
-          <button className="btn-icon" title="Notifications"><Bell size={20} /></button>
+          <NotificationBell />
           <div className="user-info">
             <div className="avatar avatar-recruiter">{profile?.full_name?.charAt(0).toUpperCase() || 'R'}</div>
             <span className="user-name">{profile?.full_name}</span>
