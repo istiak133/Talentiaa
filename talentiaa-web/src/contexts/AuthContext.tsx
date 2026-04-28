@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     for (let i = 0; i < retries; i++) {
       try {
         const res = await fetch(
-          `${supabaseUrl}/rest/v1/users?id=eq.${userId}&select=id,role,full_name,email,email_verified,account_status,avatar_url,created_at`,
+          `${supabaseUrl}/rest/v1/users?id=eq.${userId}&select=id,role,full_name,email,email_verified,account_status,avatar_url,created_at,university,major,cgpa,hometown,study_program,profile_pic_url`,
           {
             headers: {
               'apikey': anonKey,
