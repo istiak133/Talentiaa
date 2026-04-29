@@ -53,9 +53,17 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     );
   }
 
-  // Check account status
-  if (profile.account_status === 'pending' && !profile.email_verified) {
-    return <Navigate to="/verify-email" replace />;
+  // Check account status — Recruiter pending approval
+  if (profile.account_status === 'pending' && profile.role === 'recruiter') {
+    return (
+      <div className="loading-screen" style={{ flexDirection: 'column', gap: '1rem', textAlign: 'center', padding: '2rem' }}>
+        <div style={{ width: '80px', height: '80px', background: '#fef3c7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+          <span style={{ fontSize: '2rem' }}>⏳</span>
+        </div>
+        <h2 style={{ fontWeight: 800 }}>অ্যাডমিন অ্যাপ্রুভালের জন্য অপেক্ষা করুন</h2>
+        <p style={{ color: 'var(--text-muted)', maxWidth: '400px' }}>আপনার রিক্রুটার অ্যাকাউন্টটি এখনো অ্যাডমিন দ্বারা যাচাই করা হয়নি। অনুগ্রহ করে অপেক্ষা করুন।</p>
+      </div>
+    );
   }
 
   // Check role access
