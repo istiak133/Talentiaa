@@ -89,8 +89,9 @@ export default function RecruiterDashboard() {
     
     if (data && data.length > 0) {
       const first = data[0];
-      addLog(`App[0] Resume: ${first.resumes ? 'Found' : 'MISSING'}`);
-      if (first.resumes) addLog(`URL: ${first.resumes.file_url ? 'Yes' : 'Empty'}`);
+      const resume = (first as any).resumes;
+      addLog(`App[0] Resume: ${resume ? 'Found' : 'MISSING'}`);
+      if (resume) addLog(`URL: ${resume.file_url ? 'Yes' : 'Empty'}`);
     }
     
     addLog(`Success: Found ${data?.length || 0} applicants.`);
