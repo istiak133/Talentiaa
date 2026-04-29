@@ -223,7 +223,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map(u => (
+                    {users.filter(u => u.account_status === 'active').map(u => (
                       <tr key={u.id}>
                         <td>
                           <div style={{ fontWeight: 600 }}>{u.full_name}</div>
