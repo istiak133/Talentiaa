@@ -54,6 +54,7 @@ insert into auth.users (
   encrypted_password,
   email_confirmed_at,
   recovery_sent_at,
+  confirmed_at,
   last_sign_in_at,
   raw_app_meta_data,
   raw_user_meta_data,
@@ -75,6 +76,7 @@ select
   'authenticated',
   'admin@talentiaa.com', -- CHANGE THIS to your admin email
   crypt('Admin@123456', gen_salt('bf')), -- CHANGE THIS to your admin password
+  now(),
   now(),
   now(),
   now(),

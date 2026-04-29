@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { ArrowLeft, Sparkles, Save, Send, Loader2, Wand2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Save, Send, Loader2, Wand2, Briefcase, MapPin, DollarSign, Calendar, Target, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { JobType, WorkplaceType, ExperienceLevel, JobStatus } from '../../types/database';
 import { generateJobPost, suggestSkills } from '../../lib/gemini';
 
@@ -35,7 +35,6 @@ export default function CreateJobPage() {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // AI: Generate entire job post from title
   const handleAIGenerate = async () => {
     if (!formData.title.trim()) {
       setError('Please enter a Job Title first.');
@@ -61,7 +60,6 @@ export default function CreateJobPage() {
     }
   };
 
-  // AI: Suggest additional skills
   const handleSuggestSkills = async () => {
     if (!formData.title.trim()) return;
     setSkillsLoading(true);
@@ -76,7 +74,6 @@ export default function CreateJobPage() {
     }
   };
 
-  // Add a suggested skill to the form
   const addSkill = (skill: string) => {
     const current = formData.required_skills;
     const updated = current ? `${current}, ${skill}` : skill;
@@ -112,7 +109,6 @@ export default function CreateJobPage() {
         ...(status === 'published' ? { published_at: new Date().toISOString() } : {})
       }]);
       if (insertError) throw insertError;
-      alert(`Job ${status === 'published' ? 'Published' : 'Saved as Draft'}!`);
       navigate('/recruiter');
     } catch (err: any) {
       setError(err.message);
@@ -122,69 +118,80 @@ export default function CreateJobPage() {
   };
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: '100vh', padding: '32px' }}>
-      <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <button onClick={() => navigate('/recruiter')} style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '8px', padding: '8px', cursor: 'pointer' }}>
+    <div className="profile-page" style={{ minHeight: '100vh', background: 'var(--bg-body)', padding: '2rem 1rem' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <button onClick={() => navigate('/recruiter')} className="btn btn-ghost" style={{ padding: '0.5rem' }}>
               <ArrowLeft size={20} />
             </button>
-            <h1 style={{ fontSize: '24px', fontWeight: 700 }}>Create New Job</h1>
-          </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button onClick={() => handleSave('draft')} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 20px', border: '1px solid #d1d5db', borderRadius: '8px', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-              <Save size={16} /> Save Draft
-            </button>
-            <button onClick={() => handleSave('published')} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 20px', border: 'none', borderRadius: '8px', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-              <Send size={16} /> Publish Job
-            </button>
-          </div>
-        </div>
-
-        {error && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '12px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #fca5a5' }}>{error}</div>}
-
-        {/* AI Generate Banner */}
-        <div style={{ background: 'linear-gradient(135deg, #ede9fe, #dbeafe)', border: '1.5px solid #a78bfa', borderRadius: '12px', padding: '20px 24px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '16px', color: '#4c1d95', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Wand2 size={20} /> AI Auto-Generate
+            <div>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Create New Job</h1>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Fill in the details to post a new opening.</p>
             </div>
-            <p style={{ fontSize: '13px', color: '#6b21a8', marginTop: '4px' }}>
-              Just type the job title above and click this button — AI will fill the entire form for you!
+          </div>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button onClick={() => handleSave('draft')} disabled={loading} className="btn btn-secondary" style={{ padding: '0.6rem 1.25rem' }}>
+              <Save size={18} /> Save Draft
+            </button>
+            <button onClick={() => handleSave('published')} disabled={loading} className="btn btn-primary" style={{ padding: '0.6rem 1.25rem' }}>
+              <Send size={18} /> Publish Job
+            </button>
+          </div>
+        </header>
+
+        {error && (
+          <div style={{ padding: '1rem', background: '#fee2e2', color: 'var(--error)', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
+            <AlertCircle size={20} /> {error}
+          </div>
+        )}
+
+        {/* AI Magic Banner */}
+        <div style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', borderRadius: '20px', padding: '1.5rem 2rem', marginBottom: '2rem', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-lg)' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+              <div style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Sparkles size={18} color="white" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>AI Smart Fill</h3>
+            </div>
+            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
+              জব টাইটেল লিখে নিচের বাটনে ক্লিক করুন, AI আপনার জন্য পুরো ফর্মটি তৈরি করে দেবে।
             </p>
           </div>
-          <button
-            onClick={handleAIGenerate}
-            disabled={aiLoading}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+          <button 
+            onClick={handleAIGenerate} 
+            disabled={aiLoading} 
+            className="btn btn-primary" 
+            style={{ background: 'white', color: 'var(--primary)', fontWeight: 800, padding: '0.75rem 1.5rem', border: 'none' }}
           >
-            {aiLoading ? <><Loader2 size={16} className="spin" /> Generating...</> : <><Sparkles size={16} /> Generate with AI</>}
+            {aiLoading ? <span className="loading-spinner-sm" /> : <><Wand2 size={18} /> Generate with AI</>}
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '24px' }}>
-          {/* Main Form */}
-          <div style={{ flex: 3 }}>
-
-            {/* Section 1 */}
-            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '16px', color: '#1e293b' }}>1. Basic Information</h2>
-
-              <div style={{ marginBottom: '14px' }}>
-                <label style={labelStyle}>Job Title *</label>
-                <input name="title" value={formData.title} onChange={handleChange} style={inputStyle} placeholder="e.g. Senior Software Engineer" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }}>
+          {/* Main Form Sections */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            
+            <FormSection icon={<Briefcase size={20} color="var(--primary)" />} title="1. Basic Details">
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <label>Job Title *</label>
+                <div className="input-wrapper">
+                  <Briefcase size={18} className="input-icon" />
+                  <input name="title" value={formData.title} onChange={handleChange} placeholder="e.g. Senior Frontend Developer" required />
+                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '14px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Department</label>
-                  <input name="department" value={formData.department} onChange={handleChange} style={inputStyle} placeholder="e.g. Engineering" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="form-group">
+                  <label>Department</label>
+                  <div className="input-wrapper">
+                    <input name="department" value={formData.department} onChange={handleChange} placeholder="e.g. Technology" />
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Experience Level</label>
-                  <select name="experience_level" value={formData.experience_level} onChange={handleChange} style={inputStyle}>
+                <div className="form-group">
+                  <label>Experience Level</label>
+                  <select name="experience_level" value={formData.experience_level} onChange={handleChange} className="select-field">
                     <option value="junior">Junior</option>
                     <option value="mid">Mid-Level</option>
                     <option value="senior">Senior</option>
@@ -193,53 +200,42 @@ export default function CreateJobPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '14px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Job Type</label>
-                  <select name="job_type" value={formData.job_type} onChange={handleChange} style={inputStyle}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label>Job Type</label>
+                  <select name="job_type" value={formData.job_type} onChange={handleChange} className="select-field">
                     <option value="full_time">Full-time</option>
                     <option value="part_time">Part-time</option>
                     <option value="contract">Contract</option>
                     <option value="internship">Internship</option>
                   </select>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Workplace</label>
-                  <select name="workplace_type" value={formData.workplace_type} onChange={handleChange} style={inputStyle}>
+                <div className="form-group">
+                  <label>Workplace</label>
+                  <select name="workplace_type" value={formData.workplace_type} onChange={handleChange} className="select-field">
                     <option value="onsite">On-site</option>
                     <option value="hybrid">Hybrid</option>
                     <option value="remote">Remote</option>
                   </select>
                 </div>
               </div>
+            </FormSection>
 
-              <div style={{ marginBottom: '14px' }}>
-                <label style={labelStyle}>Location *</label>
-                <input name="location" value={formData.location} onChange={handleChange} style={inputStyle} placeholder="e.g. Dhaka, Bangladesh" />
-              </div>
-
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div style={{ flex: 1 }}><label style={labelStyle}>Min Salary (BDT)</label><input type="number" name="salary_min" value={formData.salary_min} onChange={handleChange} style={inputStyle} placeholder="50000" /></div>
-                <div style={{ flex: 1 }}><label style={labelStyle}>Max Salary (BDT)</label><input type="number" name="salary_max" value={formData.salary_max} onChange={handleChange} style={inputStyle} placeholder="120000" /></div>
-              </div>
-            </div>
-
-            {/* Section 2 */}
-            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '16px', color: '#1e293b' }}>2. Details & Requirements</h2>
-
-              <div style={{ marginBottom: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={labelStyle}>Required Skills (comma separated)</label>
-                  <button onClick={handleSuggestSkills} disabled={skillsLoading} style={{ fontSize: '12px', color: '#7c3aed', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    {skillsLoading ? <Loader2 size={12} /> : <Sparkles size={12} />} AI Suggest Skills
+            <FormSection icon={<Target size={20} color="var(--primary)" />} title="2. Requirements & AI Screening">
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <label style={{ margin: 0 }}>Required Skills</label>
+                  <button onClick={handleSuggestSkills} disabled={skillsLoading} style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {skillsLoading ? <Loader2 size={12} className="spin" /> : <Sparkles size={12} />} AI Suggest Skills
                   </button>
                 </div>
-                <input name="required_skills" value={formData.required_skills} onChange={handleChange} style={inputStyle} placeholder="React, Node.js, TypeScript" />
+                <div className="input-wrapper">
+                  <input name="required_skills" value={formData.required_skills} onChange={handleChange} placeholder="Comma separated: React, Node.js, TypeScript" />
+                </div>
                 {suggestedSkills.length > 0 && (
-                  <div style={{ marginTop: '8px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <div style={{ marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                     {suggestedSkills.map(skill => (
-                      <button key={skill} onClick={() => addSkill(skill)} style={{ padding: '4px 10px', background: '#ede9fe', color: '#6d28d9', border: '1px solid #c4b5fd', borderRadius: '16px', fontSize: '12px', cursor: 'pointer' }}>
+                      <button key={skill} onClick={() => addSkill(skill)} style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: '1px solid rgba(79,70,229,0.2)', padding: '0.3rem 0.75rem', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
                         + {skill}
                       </button>
                     ))}
@@ -247,54 +243,86 @@ export default function CreateJobPage() {
                 )}
               </div>
 
-              <div style={{ marginBottom: '14px' }}>
-                <label style={labelStyle}>Job Description *</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} rows={8} style={{ ...inputStyle, height: 'auto', minHeight: '160px', resize: 'vertical' }} placeholder="Describe responsibilities, requirements, benefits..." />
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <label>Job Description *</label>
+                <textarea name="description" value={formData.description} onChange={handleChange} rows={6} placeholder="Describe responsibilities, requirements, and benefits..." style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1.5px solid var(--border-light)', fontSize: '0.9rem', outline: 'none' }} required />
               </div>
 
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Application Deadline *</label>
-                  <input type="date" name="application_deadline" value={formData.application_deadline} onChange={handleChange} style={inputStyle} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label>Application Deadline *</label>
+                  <div className="input-wrapper">
+                    <Calendar size={18} className="input-icon" />
+                    <input type="date" name="application_deadline" value={formData.application_deadline} onChange={handleChange} required />
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>AI Threshold Score (%)</label>
-                  <input type="number" name="threshold_score" value={formData.threshold_score} onChange={handleChange} style={inputStyle} min="0" max="100" />
-                  <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>Candidates below this score won't pass AI screening.</p>
+                <div className="form-group">
+                  <label>AI Match Threshold (%)</label>
+                  <div className="input-wrapper">
+                    <Target size={18} className="input-icon" />
+                    <input type="number" name="threshold_score" value={formData.threshold_score} onChange={handleChange} min="0" max="100" />
+                  </div>
                 </div>
               </div>
-            </div>
+            </FormSection>
+
           </div>
 
-          {/* Right: AI Panel */}
-          <div style={{ flex: 1, minWidth: '240px' }}>
-            <div style={{ position: 'sticky', top: '24px', border: '1.5px dashed #3b82f6', borderRadius: '12px', padding: '20px', background: '#eff6ff' }}>
-              <div style={{ fontWeight: 700, fontSize: '14px', color: '#1d4ed8', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Sparkles size={16} /> AI Tips
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: '#1e3a8a' }}>
-                <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                  💡 Adding salary range increases applications by <b>30%</b>.
-                </div>
-                <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                  ✨ Click <b>"Generate with AI"</b> to auto-fill the entire form from just the job title.
-                </div>
-                <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                  🎯 Click <b>"AI Suggest Skills"</b> next to the skills field for smart recommendations.
+          {/* Right Sidebar: Additional Settings */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <FormSection icon={<DollarSign size={20} color="var(--primary)" />} title="Compensation">
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>Min Salary (BDT)</label>
+                <div className="input-wrapper">
+                  <input type="number" name="salary_min" value={formData.salary_min} onChange={handleChange} placeholder="e.g. 50000" />
                 </div>
               </div>
+              <div className="form-group">
+                <label>Max Salary (BDT)</label>
+                <div className="input-wrapper">
+                  <input type="number" name="salary_max" value={formData.salary_max} onChange={handleChange} placeholder="e.g. 100000" />
+                </div>
+              </div>
+            </FormSection>
+
+            <FormSection icon={<MapPin size={20} color="var(--primary)" />} title="Location">
+              <div className="form-group">
+                <label>Work Location *</label>
+                <div className="input-wrapper">
+                  <MapPin size={18} className="input-icon" />
+                  <input name="location" value={formData.location} onChange={handleChange} placeholder="e.g. Dhaka, Bangladesh" required />
+                </div>
+              </div>
+            </FormSection>
+
+            <div style={{ background: 'var(--secondary)', borderRadius: '20px', padding: '1.5rem', color: 'white' }}>
+              <h4 style={{ fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={18} color="var(--success)" /> Publishing Note
+              </h4>
+              <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                একবার পাবলিশ করলে ক্যান্ডিডেটরা এটি জব বোর্ডে দেখতে পাবে। আপনি পরবর্তীতে ড্রাফট হিসেবে সেভ করে রাখতে পারেন।
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .select-field { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--border-light); border-radius: 12px; outline: none; background: white; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
         .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
 }
 
-const labelStyle: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: '8px', fontSize: '14px', outline: 'none', background: '#fff' };
+function FormSection({ icon, title, children }: { icon: any, title: string, children: React.ReactNode }) {
+  return (
+    <div style={{ background: 'white', borderRadius: '20px', border: '1px solid var(--border-light)', padding: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
+      <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--secondary)' }}>
+        {icon} {title}
+      </h3>
+      {children}
+    </div>
+  );
+}

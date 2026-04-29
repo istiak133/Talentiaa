@@ -57,10 +57,13 @@ export type ApplicationStage = 'REVIEW' | 'INTERVIEW' | 'OFFER' | 'HIRED' | 'REJ
 
 export interface Applicant {
   id: string;
+  candidate_id: string;
   score_overall: number | null;
+  score_breakdown: any;
   current_stage: ApplicationStage;
   applied_at: string;
   users: { full_name: string; email: string } | null;
+  resumes?: { file_url: string } | null;
 }
 
 // Phase 9: Notifications

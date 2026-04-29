@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { User, BookOpen, MapPin, Award, Camera, ArrowLeft } from 'lucide-react';
+import { User, BookOpen, MapPin, Award, Camera, ArrowLeft, Building, GraduationCap, Save, CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react';
 
 export default function CandidateProfilePage() {
   const navigate = useNavigate();
@@ -98,9 +98,7 @@ export default function CandidateProfilePage() {
         .eq('id', profile.id);
 
       if (error) throw error;
-      setMessage({ text: 'Profile updated successfully!', type: 'success' });
-      
-      // Optionally trigger auth context reload if needed, or rely on next refresh.
+      setMessage({ text: 'আপনার প্রোফাইল সফলভাবে আপডেট করা হয়েছে!', type: 'success' });
     } catch (err: any) {
       setMessage({ text: err.message || 'Failed to update profile', type: 'error' });
     } finally {
@@ -109,138 +107,134 @@ export default function CandidateProfilePage() {
   };
 
   if (loading) {
-    return <div style={{ padding: '40px', textAlign: 'center' }}>Loading profile...</div>;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--bg-body)' }}>
+        <span className="loading-spinner-sm" style={{ borderColor: 'var(--primary)', borderTopColor: 'transparent' }} />
+      </div>
+    );
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '40px auto', padding: '0 24px' }}>
-      <button 
-        onClick={() => navigate('/candidate')} 
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: '#64748b', fontWeight: 600, cursor: 'pointer', marginBottom: '24px' }}
-      >
-        <ArrowLeft size={16} /> Back to Dashboard
-      </button>
+    <div className="profile-page" style={{ minHeight: '100vh', background: 'var(--bg-body)', padding: '2rem 1rem' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <button 
+          onClick={() => navigate('/candidate')} 
+          className="btn btn-ghost"
+          style={{ marginBottom: '1.5rem', padding: '0.5rem 0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}
+        >
+          <ArrowLeft size={18} /> Back to Dashboard
+        </button>
 
-      <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        
-        {/* Profile Header Background */}
-        <div style={{ height: '120px', background: 'linear-gradient(to right, #4f46e5, #3b82f6)' }}></div>
-        
-        <div style={{ padding: '0 32px 32px 32px' }}>
-          
-          {/* Avatar Section */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '-40px', marginBottom: '32px' }}>
-            <div style={{ position: 'relative' }}>
-              <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: '#f1f5f9', border: '4px solid #fff', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {formData.profile_pic_url ? (
-                  <img src={formData.profile_pic_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <User size={48} color="#94a3b8" />
-                )}
+        <div style={{ background: 'white', borderRadius: '24px', border: '1px solid var(--border-light)', overflow: 'hidden', boxShadow: 'var(--shadow-lg)' }}>
+          {/* Decorative Header */}
+          <div style={{ height: '160px', background: 'linear-gradient(135deg, var(--secondary), #1e293b)', position: 'relative' }}>
+            <div style={{ position: 'absolute', bottom: '-50px', left: '40px', display: 'flex', alignItems: 'flex-end', gap: '1.5rem' }}>
+              <div style={{ position: 'relative' }}>
+                <div style={{ width: '120px', height: '120px', borderRadius: '30px', background: 'white', border: '6px solid white', overflow: 'hidden', boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {formData.profile_pic_url ? (
+                    <img src={formData.profile_pic_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <User size={60} color="var(--border-light)" />
+                  )}
+                </div>
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  style={{ position: 'absolute', bottom: '8px', right: '-12px', background: 'var(--primary)', color: 'white', border: '4px solid white', width: '40px', height: '40px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-sm)', transition: 'var(--transition)' }}
+                  title="Update Photo"
+                >
+                  <Camera size={18} />
+                </button>
+                <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} accept="image/*" style={{ display: 'none' }} />
               </div>
-              <button 
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingAvatar}
-                style={{ position: 'absolute', bottom: '0', right: '0', background: '#2563eb', color: '#fff', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-              >
-                <Camera size={16} />
-              </button>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleAvatarUpload} 
-                accept="image/*" 
-                style={{ display: 'none' }} 
-              />
-            </div>
-            
-            <div>
-              <h1 style={{ fontSize: '24px', fontWeight: 800, margin: '0' }}>{formData.full_name || 'Your Name'}</h1>
-              <p style={{ color: '#64748b', margin: '4px 0 0 0' }}>{profile?.email}</p>
+              <div style={{ paddingBottom: '1rem' }}>
+                <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--secondary)' }}>{formData.full_name || 'Your Name'}</h1>
+                <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{profile?.email}</p>
+              </div>
             </div>
           </div>
 
-          {message && (
-            <div style={{ padding: '12px 16px', borderRadius: '8px', marginBottom: '24px', fontSize: '14px', fontWeight: 500, background: message.type === 'success' ? '#dcfce7' : '#fee2e2', color: message.type === 'success' ? '#15803d' : '#b91c1c' }}>
-              {message.text}
-            </div>
-          )}
+          <div style={{ padding: '80px 40px 40px' }}>
+            {message && (
+              <div style={{ padding: '1rem', borderRadius: '12px', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem', fontWeight: 600, background: message.type === 'success' ? 'var(--primary-light)' : '#fee2e2', color: message.type === 'success' ? 'var(--primary)' : 'var(--error)' }}>
+                {message.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+                {message.text}
+              </div>
+            )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div>
-                <label style={labelStyle}>Full Name</label>
-                <div style={inputContainerStyle}>
-                  <User size={16} color="#94a3b8" />
-                  <input style={inputStyle} value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} placeholder="e.g. Istiak Ahmed" required />
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: '2.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <User size={20} color="var(--primary)" /> Personal Information
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                  <div className="form-group">
+                    <label>Full Name</label>
+                    <div className="input-wrapper">
+                      <User size={18} className="input-icon" />
+                      <input type="text" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} placeholder="e.g. Istiak Ahmed" required />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Hometown</label>
+                    <div className="input-wrapper">
+                      <MapPin size={18} className="input-icon" />
+                      <input type="text" value={formData.hometown} onChange={e => setFormData({...formData, hometown: e.target.value})} placeholder="e.g. Dhaka, Bangladesh" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label style={labelStyle}>Hometown</label>
-                <div style={inputContainerStyle}>
-                  <MapPin size={16} color="#94a3b8" />
-                  <input style={inputStyle} value={formData.hometown} onChange={e => setFormData({...formData, hometown: e.target.value})} placeholder="e.g. Dhaka, Bangladesh" />
+              <div style={{ marginBottom: '2.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <GraduationCap size={20} color="var(--primary)" /> Educational Background
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                  <div className="form-group">
+                    <label>University / College</label>
+                    <div className="input-wrapper">
+                      <Building size={18} className="input-icon" />
+                      <input type="text" value={formData.university} onChange={e => setFormData({...formData, university: e.target.value})} placeholder="e.g. BRAC University" />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Study Program</label>
+                    <div className="input-wrapper">
+                      <BookOpen size={18} className="input-icon" />
+                      <input type="text" value={formData.study_program} onChange={e => setFormData({...formData, study_program: e.target.value})} placeholder="e.g. B.Sc. in CSE" />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Major / Subject</label>
+                    <div className="input-wrapper">
+                      <Award size={18} className="input-icon" />
+                      <input type="text" value={formData.major} onChange={e => setFormData({...formData, major: e.target.value})} placeholder="e.g. Computer Science" />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>CGPA</label>
+                    <div className="input-wrapper">
+                      <TrendingUp size={18} className="input-icon" />
+                      <input type="number" step="0.01" max="4.00" value={formData.cgpa} onChange={e => setFormData({...formData, cgpa: e.target.value})} placeholder="e.g. 3.85" />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div>
-                <label style={labelStyle}>University</label>
-                <div style={inputContainerStyle}>
-                  <BookOpen size={16} color="#94a3b8" />
-                  <input style={inputStyle} value={formData.university} onChange={e => setFormData({...formData, university: e.target.value})} placeholder="e.g. BRAC University" />
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-light)', paddingTop: '2rem' }}>
+                <button 
+                  type="submit" 
+                  disabled={saving || uploadingAvatar}
+                  className="btn btn-primary"
+                  style={{ padding: '0.8rem 2.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}
+                >
+                  {saving ? <span className="loading-spinner-sm" /> : <><Save size={18} /> Save Profile Updates</>}
+                </button>
               </div>
-
-              <div>
-                <label style={labelStyle}>Current Study Program</label>
-                <div style={inputContainerStyle}>
-                  <BookOpen size={16} color="#94a3b8" />
-                  <input style={inputStyle} value={formData.study_program} onChange={e => setFormData({...formData, study_program: e.target.value})} placeholder="e.g. B.Sc. in CSE" />
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div>
-                <label style={labelStyle}>Major / Subject</label>
-                <div style={inputContainerStyle}>
-                  <Award size={16} color="#94a3b8" />
-                  <input style={inputStyle} value={formData.major} onChange={e => setFormData({...formData, major: e.target.value})} placeholder="e.g. Computer Science" />
-                </div>
-              </div>
-
-              <div>
-                <label style={labelStyle}>CGPA (Current/Final)</label>
-                <div style={inputContainerStyle}>
-                  <Award size={16} color="#94a3b8" />
-                  <input style={inputStyle} type="number" step="0.01" max="4.00" value={formData.cgpa} onChange={e => setFormData({...formData, cgpa: e.target.value})} placeholder="e.g. 3.85" />
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', paddingTop: '24px', borderTop: '1px solid #e2e8f0' }}>
-              <button 
-                type="submit" 
-                disabled={saving || uploadingAvatar}
-                style={{ padding: '12px 32px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '15px', cursor: 'pointer', opacity: (saving || uploadingAvatar) ? 0.7 : 1 }}
-              >
-                {saving ? 'Saving...' : 'Save Profile Changes'}
-              </button>
-            </div>
-          </form>
-
+            </form>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-const labelStyle: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' };
-const inputContainerStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '10px', padding: '0 12px', border: '1.5px solid #cbd5e1', borderRadius: '8px', background: '#f8fafc' };
-const inputStyle: React.CSSProperties = { flex: 1, padding: '12px 0', border: 'none', background: 'transparent', fontSize: '14px', outline: 'none', color: '#0f172a' };

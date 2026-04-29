@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Search, MapPin, Briefcase, Clock, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Search, MapPin, Briefcase, Clock, ChevronLeft, ChevronRight, X, Filter } from 'lucide-react';
 import type { Job } from '../../types/database';
 
 const PAGE_SIZE = 8;
@@ -32,7 +32,7 @@ export default function JobBoardPage() {
       if (searchInput) p.set('q', searchInput); else p.delete('q');
       p.set('page', '1');
       setSearchParams(p);
-    }, 300);
+    }, 400);
     return () => clearTimeout(t);
   }, [searchInput]);
 
@@ -77,190 +77,216 @@ export default function JobBoardPage() {
   const timeAgo = (d: string | null) => {
     if (!d) return '';
     const diff = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-    if (diff === 0) return 'Today';
-    if (diff === 1) return '1 day ago';
-    return `${diff} days ago`;
+    if (diff === 0) return 'আজ';
+    if (diff === 1) return '১ দিন আগে';
+    return `${diff} দিন আগে`;
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      {/* Top Bar */}
-      <header style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: 800, cursor: 'pointer' }} onClick={() => navigate('/')}>Talentiaa</h1>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          {profile ? (
-            <>
-              <button onClick={() => navigate(profile.role === 'admin' ? '/admin' : profile.role === 'recruiter' ? '/recruiter' : '/candidate')} style={btnStyle}>Dashboard</button>
-              {profile.role === 'candidate' && (
+    <div className="job-board-v2" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <header className="nav-header">
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+            <a href="/" className="nav-logo">Talentiaa</a>
+            <nav style={{ display: 'flex', gap: '1.5rem' }}>
+              <a href="/" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.95rem' }}>জব বোর্ড</a>
+              <a href="#" style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.95rem' }}>কোম্পানি</a>
+            </nav>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            {profile ? (
+              <>
                 <button 
-                  onClick={() => navigate('/candidate/profile')}
-                  style={{ ...btnStyle, background: '#e0e7ff', color: '#4f46e5' }}
+                  onClick={() => navigate(profile.role === 'admin' ? '/admin' : profile.role === 'recruiter' ? '/recruiter' : '/candidate')} 
+                  className="btn btn-secondary"
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
                 >
-                  Profile
+                  Dashboard
                 </button>
-              )}
-            </>
-          ) : (
-            <>
-              <button onClick={() => navigate('/login')} style={{ ...btnStyle, background: '#fff', color: '#2563eb', border: '1.5px solid #2563eb' }}>Login</button>
-              <button onClick={() => navigate('/signup')} style={btnStyle}>Sign Up</button>
-            </>
-          )}
+                {profile.role === 'candidate' && (
+                  <button 
+                    onClick={() => navigate('/candidate/profile')}
+                    className="btn btn-primary"
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                  >
+                    Profile
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <button onClick={() => navigate('/login')} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>লগইন</button>
+                <button onClick={() => navigate('/signup')} className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>সাইন আপ</button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Search & Filters */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '16px 32px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
+      {/* Search Section */}
+      <section style={{ background: 'white', borderBottom: '1px solid var(--border-light)', padding: '1.5rem 0' }}>
+        <div className="container">
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <div style={{ flex: 1, position: 'relative' }}>
-              <Search size={18} style={{ position: 'absolute', left: '12px', top: '11px', color: '#9ca3af' }} />
+              <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
-                placeholder="Search jobs by title..."
-                style={{ width: '100%', padding: '10px 12px 10px 38px', border: '1.5px solid #d1d5db', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+                placeholder="জব টাইটেল বা কি-ওয়ার্ড দিয়ে সার্চ করুন..."
+                className="input-field"
+                style={{ width: '100%', padding: '0.875rem 1rem 0.875rem 3rem', border: '1.5px solid var(--border-light)', borderRadius: '12px', outline: 'none', fontSize: '1rem' }}
               />
             </div>
-          </div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <select value={jobType} onChange={e => setFilter('type', e.target.value)} style={filterStyle}>
-              <option value="">All Job Types</option>
-              <option value="full_time">Full-time</option>
-              <option value="part_time">Part-time</option>
-              <option value="contract">Contract</option>
-              <option value="internship">Internship</option>
-            </select>
-            <select value={workplace} onChange={e => setFilter('workplace', e.target.value)} style={filterStyle}>
-              <option value="">All Workplaces</option>
-              <option value="onsite">On-site</option>
-              <option value="hybrid">Hybrid</option>
-              <option value="remote">Remote</option>
-            </select>
-            <select value={experience} onChange={e => setFilter('exp', e.target.value)} style={filterStyle}>
-              <option value="">All Levels</option>
-              <option value="junior">Junior</option>
-              <option value="mid">Mid-Level</option>
-              <option value="senior">Senior</option>
-              <option value="lead">Lead</option>
-            </select>
-            {(keyword || jobType || workplace || experience) && (
-              <button onClick={() => { setSearchInput(''); setSearchParams({}); }} style={{ ...filterStyle, color: '#dc2626', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <X size={14} /> Clear
-              </button>
-            )}
-            <span style={{ marginLeft: 'auto', fontSize: '13px', color: '#6b7280', alignSelf: 'center' }}>{total} jobs found</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content: Split View */}
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 32px', display: 'flex', gap: '24px', minHeight: 'calc(100vh - 160px)' }}>
-        
-        {/* Left: Job List */}
-        <div style={{ width: '420px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {loading ? <p style={{ color: '#9ca3af' }}>Loading...</p> : jobs.length === 0 ? (
-            <p style={{ color: '#9ca3af', textAlign: 'center', paddingTop: '40px' }}>No jobs found matching your criteria.</p>
-          ) : jobs.map(job => (
-            <div
-              key={job.id}
-              onClick={() => setSelectedJob(job)}
-              style={{
-                background: selectedJob?.id === job.id ? '#eff6ff' : '#fff',
-                border: selectedJob?.id === job.id ? '1.5px solid #3b82f6' : '1px solid #e5e7eb',
-                borderRadius: '12px', padding: '16px', cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
-            >
-              <div style={{ fontWeight: 700, fontSize: '15px', marginBottom: '4px' }}>{job.title}</div>
-              <div style={{ fontSize: '13px', color: '#6b7280', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {job.department && <span>{job.department}</span>}
-                <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><MapPin size={12} /> {job.location}</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Briefcase size={12} /> {job.workplace_type}</span>
-              </div>
-              <div style={{ display: 'flex', gap: '4px', marginTop: '8px', flexWrap: 'wrap' }}>
-                {job.required_skills?.slice(0, 3).map(s => (
-                  <span key={s} style={{ padding: '2px 8px', background: '#f3f4f6', borderRadius: '12px', fontSize: '11px', color: '#4b5563' }}>{s}</span>
-                ))}
-                {job.required_skills?.length > 3 && <span style={{ fontSize: '11px', color: '#9ca3af' }}>+{job.required_skills.length - 3}</span>}
-              </div>
-              <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Clock size={11} /> {timeAgo(job.published_at)}
-              </div>
-            </div>
-          ))}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '12px' }}>
-              <button disabled={page <= 1} onClick={() => setFilter('page', String(page - 1))} style={pageBtnStyle}><ChevronLeft size={16} /></button>
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button key={i} onClick={() => setFilter('page', String(i + 1))} style={{ ...pageBtnStyle, background: page === i + 1 ? '#2563eb' : '#fff', color: page === i + 1 ? '#fff' : '#374151' }}>{i + 1}</button>
-              ))}
-              <button disabled={page >= totalPages} onClick={() => setFilter('page', String(page + 1))} style={pageBtnStyle}><ChevronRight size={16} /></button>
-            </div>
-          )}
-        </div>
-
-        {/* Right: Job Details */}
-        <div style={{ flex: 1, background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '32px', overflowY: 'auto' }}>
-          {selectedJob ? (
-            <>
-              <h2 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '8px' }}>{selectedJob.title}</h2>
-              <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                {selectedJob.department && <span>{selectedJob.department}</span>}
-                <span>📍 {selectedJob.location}</span>
-                <span>🏢 {selectedJob.workplace_type}</span>
-                <span>💼 {selectedJob.job_type.replace('_', '-')}</span>
-                <span>📊 {selectedJob.experience_level}</span>
-              </div>
-
-              {selectedJob.salary_visible && (selectedJob.salary_min || selectedJob.salary_max) && (
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '14px', fontWeight: 600, color: '#15803d' }}>
-                  💰 {selectedJob.salary_currency} {selectedJob.salary_min?.toLocaleString()} — {selectedJob.salary_max?.toLocaleString()}
-                </div>
-              )}
-
-              <div style={{ marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px' }}>Required Skills</h3>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {selectedJob.required_skills?.map(s => (
-                    <span key={s} style={{ padding: '4px 12px', background: '#ede9fe', color: '#6d28d9', borderRadius: '16px', fontSize: '13px', fontWeight: 500 }}>{s}</span>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px' }}>Job Description</h3>
-                <p style={{ fontSize: '14px', color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{selectedJob.description}</p>
-              </div>
-
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', fontSize: '13px', color: '#6b7280' }}>
-                <span>📅 Deadline: <b>{new Date(selectedJob.application_deadline).toLocaleDateString()}</b></span>
-                <span>👥 Hiring: <b>{selectedJob.hiring_count}</b></span>
-              </div>
-
-              {(!profile || profile.role === 'candidate') ? (
-                <button onClick={() => handleApply(selectedJob.id)} style={{ width: '100%', padding: '14px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: 700, cursor: 'pointer' }}>
-                  Apply Now →
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <select value={jobType} onChange={e => setFilter('type', e.target.value)} className="select-field">
+                <option value="">জব টাইপ</option>
+                <option value="full_time">Full-time</option>
+                <option value="part_time">Part-time</option>
+                <option value="contract">Contract</option>
+                <option value="internship">Internship</option>
+              </select>
+              <select value={workplace} onChange={e => setFilter('workplace', e.target.value)} className="select-field">
+                <option value="">কাজের ধরন</option>
+                <option value="onsite">On-site</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="remote">Remote</option>
+              </select>
+              {(keyword || jobType || workplace || experience) && (
+                <button onClick={() => { setSearchInput(''); setSearchParams({}); }} className="btn btn-secondary" style={{ color: 'var(--error)' }}>
+                  <X size={18} /> Clear
                 </button>
-              ) : (
-                <div style={{ width: '100%', padding: '14px', background: '#f3f4f6', color: '#6b7280', border: '1px dashed #d1d5db', borderRadius: '10px', fontSize: '14px', fontWeight: 600, textAlign: 'center' }}>
-                  Viewing as {profile.role} (Cannot Apply)
-                </div>
               )}
-            </>
-          ) : (
-            <div style={{ textAlign: 'center', color: '#9ca3af', paddingTop: '100px' }}>
-              <p style={{ fontSize: '16px' }}>👈 Select a job to view details</p>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* Main Content */}
+      <main style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div className="container" style={{ display: 'flex', width: '100%', gap: '2rem', padding: '2rem 1.5rem', height: 'calc(100vh - 160px)' }}>
+          
+          {/* Left Column: Job List */}
+          <div style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', paddingRight: '10px' }}>
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <div className="loading-spinner-sm" style={{ borderColor: 'var(--primary)', borderTopColor: 'transparent' }} />
+              </div>
+            ) : jobs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem 1rem', background: 'white', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                <p style={{ color: 'var(--text-muted)' }}>কোনো জব পাওয়া যায়নি।</p>
+              </div>
+            ) : jobs.map(job => (
+              <div
+                key={job.id}
+                onClick={() => setSelectedJob(job)}
+                className={`job-item-card ${selectedJob?.id === job.id ? 'active' : ''}`}
+                style={{
+                  background: 'white',
+                  padding: '1.25rem',
+                  borderRadius: '12px',
+                  border: selectedJob?.id === job.id ? '2px solid var(--primary)' : '1px solid var(--border-light)',
+                  cursor: 'pointer',
+                  transition: 'var(--transition)',
+                  boxShadow: selectedJob?.id === job.id ? 'var(--shadow-md)' : 'none'
+                }}
+              >
+                <h3 style={{ fontSize: '1.05rem', marginBottom: '0.5rem' }}>{job.title}</h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14} /> {job.location}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Briefcase size={14} /> {job.workplace_type}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+                  <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>{job.job_type.replace('_', ' ')}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{timeAgo(job.published_at)}</span>
+                </div>
+              </div>
+            ))}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1rem', paddingBottom: '1rem' }}>
+                <button disabled={page <= 1} onClick={() => setFilter('page', String(page - 1))} className="btn btn-secondary" style={{ padding: '0.5rem' }}><ChevronLeft size={18} /></button>
+                <button disabled={page >= totalPages} onClick={() => setFilter('page', String(page + 1))} className="btn btn-secondary" style={{ padding: '0.5rem' }}><ChevronRight size={18} /></button>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Job Details */}
+          <div style={{ flex: 1, background: 'white', borderRadius: '16px', border: '1px solid var(--border-light)', overflowY: 'auto', boxShadow: 'var(--shadow-sm)' }}>
+            {selectedJob ? (
+              <div style={{ padding: '2.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                  <div>
+                    <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{selectedJob.title}</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>{selectedJob.department} · {selectedJob.location}</p>
+                  </div>
+                  <button onClick={() => handleApply(selectedJob.id)} className="btn btn-primary" style={{ padding: '0.875rem 2rem' }}>
+                    আবেদন করুন
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+                  <div style={{ padding: '1rem', background: 'var(--bg-body)', borderRadius: '12px' }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>কাজের ধরন</p>
+                    <p style={{ fontWeight: 600 }}>{selectedJob.workplace_type} / {selectedJob.job_type}</p>
+                  </div>
+                  <div style={{ padding: '1rem', background: 'var(--bg-body)', borderRadius: '12px' }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>বেতন</p>
+                    <p style={{ fontWeight: 600 }}>
+                      {selectedJob.salary_visible ? `${selectedJob.salary_currency} ${selectedJob.salary_min?.toLocaleString()} - ${selectedJob.salary_max?.toLocaleString()}` : 'আলোচনা সাপেক্ষে'}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '2rem' }}>
+                  <h4 style={{ marginBottom: '1rem' }}>প্রয়োজনীয় স্কিলসমূহ</h4>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {selectedJob.required_skills?.map(s => (
+                      <span key={s} className="badge badge-info" style={{ padding: '0.5rem 1rem' }}>{s}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 style={{ marginBottom: '1rem' }}>জব ডেসক্রিপশন</h4>
+                  <div style={{ color: 'var(--secondary-light)', lineHeight: '1.8', whiteSpace: 'pre-wrap', fontSize: '1.05rem' }}>
+                    {selectedJob.description}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <Briefcase size={48} style={{ marginBottom: '1rem', opacity: 0.2 }} />
+                  <p>বিস্তারিত দেখতে বাম পাশ থেকে একটি জব সিলেক্ট করুন</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      <style>{`
+        .select-field {
+          padding: 0.75rem 1rem;
+          border: 1.5px solid var(--border-light);
+          border-radius: 12px;
+          outline: none;
+          background: white;
+          font-weight: 500;
+          cursor: pointer;
+        }
+        .job-item-card:hover {
+          border-color: var(--primary) !important;
+          transform: translateX(4px);
+        }
+        .job-item-card.active {
+          background: var(--primary-light) !important;
+        }
+      `}</style>
     </div>
   );
 }
 
-const btnStyle: React.CSSProperties = { padding: '8px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '14px' };
 const filterStyle: React.CSSProperties = { padding: '8px 12px', border: '1.5px solid #d1d5db', borderRadius: '8px', fontSize: '13px', background: '#fff', outline: 'none' };
-const pageBtnStyle: React.CSSProperties = { width: '32px', height: '32px', border: '1px solid #d1d5db', borderRadius: '6px', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' };
