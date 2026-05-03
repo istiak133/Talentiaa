@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { AlertCircle, Eye, EyeOff, Lock, Mail, Shield, ChevronRight } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Lock, Mail, Shield, ArrowRight, KeyRound, Server } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import type { UserRole } from '../../types/database';
+import AnimatedBackground from '../../components/AnimatedBackground';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -59,65 +60,87 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
+    <div className="auth-page" style={{ background: '#000' }}>
+      <AnimatedBackground variant="mesh" particleCount={50} color="94, 92, 230" speed={0.25} connectDistance={120} />
+      <div className="auth-container" style={{ border: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 1 }}>
         {/* Branding Sidebar */}
-        <div className="auth-branding" style={{ background: 'var(--secondary)' }}>
+        <div className="auth-branding" style={{ background: 'linear-gradient(180deg, #000, #1d1d1f)' }}>
           <div className="branding-content">
-            <div style={{ width: '56px', height: '56px', background: 'rgba(255,255,255,0.1)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-              <Shield size={32} color="var(--primary)" />
+            <div style={{
+              width: '56px', height: '56px',
+              background: 'rgba(255,255,255,0.06)',
+              borderRadius: 'var(--radius-lg)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: '2rem',
+              animation: 'pulseGlow 2.5s ease-in-out infinite',
+              border: '1px solid rgba(255,255,255,0.08)'
+            }}>
+              <Shield size={28} color="var(--primary)" />
             </div>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: 800 }}>Admin Portal</h2>
-            <p style={{ marginTop: '1rem', color: '#94a3b8' }}>
-              অ্যাডমিন কন্ট্রোল সেন্টারে প্রবেশ করুন। এখান থেকে পুরো প্ল্যাটফর্মের ইউজার এবং জব মডারেশন নিয়ন্ত্রণ করা হয়।
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 700, letterSpacing: '-0.04em', animation: 'fadeInUp 0.5s var(--ease-apple) 0.3s both' }}>Admin Portal</h2>
+            <p style={{ marginTop: '1rem', color: 'rgba(255,255,255,0.4)', animation: 'fadeInUp 0.5s var(--ease-apple) 0.4s both' }}>
+              অ্যাডমিন কন্ট্রোল সেন্টারে প্রবেশ করুন। এখান থেকে পুরো প্ল্যাটফর্মের ইউজার এবং জব মডারেশন নিয়ন্ত্রণ করা হয়।
             </p>
-            <div style={{ marginTop: '3rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div className="feature-pill"><Shield size={18} /> High Security Access</div>
-              <div className="feature-pill"><Shield size={18} /> Management Dashboard</div>
+            <div style={{ marginTop: '3rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {[
+                { icon: <Shield size={16} />, text: 'High Security Access' },
+                { icon: <KeyRound size={16} />, text: 'Management Dashboard' },
+                { icon: <Server size={16} />, text: 'Full System Control' },
+              ].map((item, i) => (
+                <div key={i} className="feature-pill" style={{ animation: `fadeInUp 0.4s var(--ease-apple) ${0.5 + i * 0.1}s both` }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)' }} />
+                  {item.text}
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="auth-card">
+        <div className="auth-card" style={{ background: '#1d1d1f', color: 'white' }}>
           <div className="auth-header">
-            <h1 className="auth-logo" style={{ color: 'var(--secondary)' }}>অ্যাডমিন লগইন</h1>
-            <p className="auth-subtitle">আপনার ক্রেডেনশিয়াল ব্যবহার করে প্রবেশ করুন</p>
+            <h1 className="auth-logo" style={{ WebkitTextFillColor: 'white' }}>Admin Login</h1>
+            <p className="auth-subtitle" style={{ color: 'rgba(255,255,255,0.4)' }}>Enter your credentials to continue</p>
           </div>
 
           {error && (
-            <div className="auth-error">
-              <AlertCircle size={18} />
+            <div className="auth-error" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
+              <AlertCircle size={16} />
               <span>{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label>অ্যাডমিন ইমেইল</label>
+            <div className="form-group" style={{ animation: 'fadeInUp 0.4s var(--ease-apple) 0.1s both' }}>
+              <label style={{ color: 'rgba(255,255,255,0.6)' }}>Email</label>
               <div className="input-wrapper">
                 <Mail size={18} className="input-icon" />
-                <input type="email" placeholder="admin@talentiaa.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                <input type="email" placeholder="admin@talentiaa.com" value={email} onChange={e => setEmail(e.target.value)} required
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }} />
               </div>
             </div>
 
-            <div className="form-group">
-              <label>পাসওয়ার্ড</label>
+            <div className="form-group" style={{ animation: 'fadeInUp 0.4s var(--ease-apple) 0.2s both' }}>
+              <label style={{ color: 'rgba(255,255,255,0.6)' }}>Password</label>
               <div className="input-wrapper">
                 <Lock size={18} className="input-icon" />
-                <input type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+                <input type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }} />
                 <button type="button" className="input-action" onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary" disabled={loading} style={{ height: '50px', marginTop: '1rem' }}>
-              {loading ? <span className="loading-spinner-sm" /> : <>অ্যাডমিন লগইন <ChevronRight size={18} /></>}
+            <button type="submit" className="btn btn-primary" disabled={loading} style={{
+              height: '48px', marginTop: '1rem',
+              animation: 'fadeInUp 0.4s var(--ease-apple) 0.3s both'
+            }}>
+              {loading ? <span className="loading-spinner-sm" /> : <>Continue <ArrowRight size={16} /></>}
             </button>
           </form>
 
-          <p className="auth-footer" style={{ marginTop: '2rem' }}>
-            সাধারণ ইউজার? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>সাধারণ লগইন পেইজে যান</Link>
+          <p className="auth-footer" style={{ marginTop: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.35)' }}>
+            Regular user? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign in here</Link>
           </p>
         </div>
       </div>
