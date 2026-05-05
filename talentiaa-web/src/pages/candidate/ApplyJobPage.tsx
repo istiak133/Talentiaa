@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { matchResumeToJob } from '../../lib/grok';
+import { matchResumeToJob } from '../../lib/groq';
 import { ArrowLeft, Upload, Loader2, CheckCircle, Briefcase, MapPin, Building, Sparkles, Target, AlertCircle, FileText, ChevronRight, CalendarX2, FileEdit, Calendar } from 'lucide-react';
 import type { Job } from '../../types/database';
 
@@ -132,7 +132,11 @@ export default function ApplyJobPage() {
 
       setApplied(true);
     } catch (err: any) {
-      setError(err.message || 'Application failed.');
+      if (err.code === '23505' || err.message?.includes('applications_unique_job_candidate')) {
+        setError('আপনি ইতিমধ্যে এই জবটিতে আবেদন করেছেন! (You have already applied for this job)');
+      } else {
+        setError(err.message || 'Application failed.');
+      }
     } finally {
       setLoading(false);
     }

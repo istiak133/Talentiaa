@@ -1,0 +1,51 @@
+
+
+DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING
+
+Course: CSE 391
+Name: Istiak Ahmed
+ID: 24141210
+Email: istiak.ahmed3@g.bracu.ac.bd
+Project Title: Talentiaa - AI-Powered Applicant Tracking System (ATS)
+
+Project Features:
+By the end of this course, implemented features: 
+1. Role-based Authentication (Admin, Recruiter, Candidate)
+2. AI-Powered Resume Scoring & Matching (using Groq AI / Llama 3.3)
+3. Automated Job Description Generation using AI
+4. Kanban Board Pipeline with Drag & Drop functionality
+5. Real-time Application Trend & Stage Analytics (using Recharts)
+6. Automated Email Notifications on Application Stage Change (EmailJS)
+7. "Hidden Pool" logic to auto-filter candidates below a threshold AI score
+8. Public Job Board with real-time experience level filtering
+9. Admin Dashboard with one-click CSV Data Export capabilities
+
+Screenshots: 
+[Insert Screenshot 1: Landing Page / Job Board]
+[Insert Screenshot 2: Recruiter Kanban Board & Analytics]
+[Insert Screenshot 3: Candidate Application AI Matching Score]
+
+Online Resources used:
+a) Reference:
+- React 19 & Vite Documentation (react.dev, vitejs.dev)
+- Supabase Documentation for PostgreSQL & Auth (supabase.com)
+- Groq AI API Documentation (console.groq.com)
+- Dnd-kit Documentation for Drag and Drop (docs.dndkit.com)
+- Recharts Documentation for Analytics (recharts.org)
+
+b) Stackoverflow or github links:
+- GitHub: https://github.com/dnd-kit/dnd-kit
+- GitHub: https://github.com/recharts/recharts
+
+Future Enhancements:
+Following enhancements can be added to the current system which will improve the system:
+1. Interview Scheduling with Google Calendar Integration
+2. Video Interview support using WebRTC
+3. In-app real-time messaging between Recruiter and Candidate
+4. Advanced Multi-factor Authentication (MFA) for Admin roles
+5. AI-driven Skill Gap Analysis for rejected candidates
+
+
+
+
+
