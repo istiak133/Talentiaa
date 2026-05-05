@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Search, MapPin, Briefcase, Clock, ChevronLeft, ChevronRight, X, DollarSign, Building2, ArrowRight } from 'lucide-react';
+import { Search, MapPin, Briefcase, Clock, ChevronLeft, ChevronRight, X, DollarSign, Building2, ArrowRight, GraduationCap } from 'lucide-react';
 import type { Job } from '../../types/database';
 import AnimatedBackground from '../../components/AnimatedBackground';
 import Footer from '../../components/Footer';
@@ -157,7 +157,15 @@ export default function JobBoardPage() {
               <option value="hybrid" style={{ color: '#000' }}>Hybrid</option>
               <option value="remote" style={{ color: '#000' }}>Remote</option>
             </select>
-            {(keyword || jobType || workplace) && (
+            <select value={experience} onChange={e => setFilter('exp', e.target.value)} style={{ padding: '0 1rem', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', color: 'white', fontWeight: 500, fontSize: '0.88rem', cursor: 'pointer', outline: 'none' }}>
+              <option value="" style={{ color: '#000' }}>Experience</option>
+              <option value="entry" style={{ color: '#000' }}>Entry Level</option>
+              <option value="mid" style={{ color: '#000' }}>Mid Level</option>
+              <option value="senior" style={{ color: '#000' }}>Senior</option>
+              <option value="lead" style={{ color: '#000' }}>Lead</option>
+              <option value="executive" style={{ color: '#000' }}>Executive</option>
+            </select>
+            {(keyword || jobType || workplace || experience) && (
               <button onClick={() => { setSearchInput(''); setSearchParams({}); }} style={{ padding: '0 0.85rem', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,59,48,0.2)', background: 'rgba(255,59,48,0.08)', color: '#ff6961', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={16} /></button>
             )}
           </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { LogOut, Shield, Users, Briefcase, ShieldAlert, LayoutDashboard, BarChart3 } from 'lucide-react';
+import { LogOut, Shield, Users, Briefcase, ShieldAlert, LayoutDashboard, BarChart3, Download } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import emailjs from '@emailjs/browser';
 import type { UserProfile, Job } from '../../types/database';
@@ -105,6 +105,24 @@ export default function AdminDashboard() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <NotificationBell />
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => { const m = document.getElementById('export-menu'); if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none'; }} className="btn btn-secondary" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Download size={15} /> Export
+              </button>
+              <div id="export-menu" style={{ display: 'none', position: 'absolute', top: '110%', right: 0, background: 'white', border: '1px solid var(--border-light)', borderRadius: '12px', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', zIndex: 50, minWidth: '180px' }}>
+                {[
+                  { label: 'Export Users', fn: exportUsers },
+                  { label: 'Export Jobs', fn: exportJobs },
+                  { label: 'Export Applications', fn: exportApplications },
+                ].map(item => (
+                  <button key={item.label} onClick={() => { item.fn(); const m = document.getElementById('export-menu'); if (m) m.style.display = 'none'; }}
+                    style={{ display: 'block', width: '100%', padding: '0.65rem 1rem', border: 'none', background: 'none', fontSize: '0.82rem', fontWeight: 600, color: 'var(--secondary)', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-body)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                  >{item.label}</button>
+                ))}
+              </div>
+            </div>
             <button onClick={fetchData} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>Refresh</button>
           </div>
         </header>
