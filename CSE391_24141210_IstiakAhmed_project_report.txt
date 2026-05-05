@@ -20,11 +20,9 @@ By the end of this course, implemented features:
 8. Public Job Board with real-time experience level filtering
 9. Admin Dashboard with one-click CSV Data Export capabilities
 
-Screenshots: 
-[Insert Screenshot 1: Landing Page / Job Board]
+Screenshots:
 [Insert Screenshot 2: Recruiter Kanban Board & Analytics]
 [Insert Screenshot 3: Candidate Application AI Matching Score]
-
 Online Resources used:
 a) Reference:
 - React 19 & Vite Documentation (react.dev, vitejs.dev)
