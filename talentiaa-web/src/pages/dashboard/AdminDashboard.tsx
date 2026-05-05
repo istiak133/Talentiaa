@@ -55,6 +55,32 @@ export default function AdminDashboard() {
     if (!error) setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: newStatus as any } : j));
   };
 
+  // CSV Export utility
+  const exportCSV = (filename: string, headers: string[], rows: string[][]) => {
+    const escape = (v: string) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csvContent = [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportUsers = () => exportCSV('talentiaa_users.csv',
+    ['Name', 'Email', 'Role', 'Status', 'Company', 'Joined'],
+    users.map(u => [u.full_name, u.email, u.role, u.account_status, u.company_name || '', new Date(u.created_at).toLocaleDateString()])
+  );
+
+  const exportJobs = () => exportCSV('talentiaa_jobs.csv',
+    ['Title', 'Posted By', 'Status', 'Location', 'Type', 'Experience', 'Published'],
+    jobs.map(j => [j.title, (j as any).users?.full_name || '', j.status, j.location, j.job_type, j.experience_level, j.published_at ? new Date(j.published_at).toLocaleDateString() : ''])
+  );
+
+  const exportApplications = () => exportCSV('talentiaa_applications.csv',
+    ['Candidate', 'Job', 'Stage', 'Applied At'],
+    applications.map(a => [a.users?.full_name || '', a.jobs?.title || '', a.current_stage, new Date(a.applied_at).toLocaleDateString()])
+  );
+
   const pendingRecruiters = users.filter(u => u.role === 'recruiter' && u.account_status === 'pending');
   const activeJobs = jobs.filter(j => j.status === 'published').length;
 

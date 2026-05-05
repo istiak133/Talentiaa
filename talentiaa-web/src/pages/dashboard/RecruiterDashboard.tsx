@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { LogOut, Briefcase, Users, Plus, ChevronDown, KanbanSquare, TrendingUp, LayoutDashboard, RefreshCcw, EyeOff, RotateCcw, Target } from 'lucide-react';
+import { LogOut, Briefcase, Users, Plus, ChevronDown, KanbanSquare, TrendingUp, LayoutDashboard, RefreshCcw, EyeOff, RotateCcw, Target, BarChart3, FileText, X } from 'lucide-react';
 import emailjs from '@emailjs/browser';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import type { ApplicationStage, Applicant } from '../../types/database';
 import KanbanBoard from '../../components/KanbanBoard';
 import NotificationBell from '../../components/NotificationBell';
@@ -115,6 +116,17 @@ export default function RecruiterDashboard() {
     await supabase.from('applications').update({ hidden_pool: false, current_stage: 'review' }).eq('id', applicantId);
   };
 
+  // Chart Data Preparation
+  const activeApplicants = allApplicants.filter(a => !a.hidden_pool);
+  
+  const appsByDate: Record<string, number> = {};
+  activeApplicants.forEach(a => { const d = new Date(a.applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); appsByDate[d] = (appsByDate[d] || 0) + 1; });
+  const areaChartData = Object.keys(appsByDate).map(d => ({ name: d, applicants: appsByDate[d] })).slice(-10);
+
+  const stageCounts = activeApplicants.reduce((acc, c) => { acc[c.current_stage] = (acc[c.current_stage] || 0) + 1; return acc; }, {} as Record<string, number>);
+  const COLORS = ['#0071e3', '#5ac8fa', '#34c759', '#ff9f0a', '#ff3b30'];
+  const donutData = Object.keys(stageCounts).map(s => ({ name: s, value: stageCounts[s] }));
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-body)' }}>
       {/* Sidebar */}
@@ -168,6 +180,61 @@ export default function RecruiterDashboard() {
           <StatCard label="Active Jobs" value={jobs.filter(j => j.status === 'published').length} color="#5ac8fa" />
           <StatCard label="Hidden Pool" value={hiddenPoolApplicants.length} color="#ff9f0a" />
         </div>
+
+        {/* Analytics Charts */}
+        {viewMode === 'list' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.25rem', marginBottom: '2rem', animation: 'fadeInUp 0.5s var(--ease-apple) 0.15s both' }}>
+            <div style={{ background: 'white', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)', padding: '1.25rem' }}>
+              <h3 style={{ fontSize: '0.88rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <TrendingUp size={16} color="var(--primary)" /> Application Trend
+              </h3>
+              <div style={{ height: '220px' }}>
+                {areaChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={areaChartData}>
+                      <defs><linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#0071e3" stopOpacity={0.12}/><stop offset="95%" stopColor="#0071e3" stopOpacity={0}/></linearGradient></defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-light)" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} allowDecimals={false} />
+                      <RechartsTooltip contentStyle={{ borderRadius: '12px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-lg)', fontSize: '0.82rem' }} />
+                      <Area type="monotone" dataKey="applicants" stroke="#0071e3" strokeWidth={2.5} fillOpacity={1} fill="url(#colorApps)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No data available</div>
+                )}
+              </div>
+            </div>
+            <div style={{ background: 'white', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)', padding: '1.25rem' }}>
+              <h3 style={{ fontSize: '0.88rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <BarChart3 size={16} color="#5ac8fa" /> Stage Distribution
+              </h3>
+              <div style={{ height: '180px' }}>
+                {donutData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={donutData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={4} dataKey="value">
+                        {donutData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                      </Pie>
+                      <RechartsTooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No data available</div>
+                )}
+              </div>
+              {donutData.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.35rem', marginTop: '0.5rem' }}>
+                  {donutData.map((e, i) => (
+                    <div key={e.name} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: COLORS[i % COLORS.length] }} />{e.name}: {e.value}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '4rem' }}><div className="loading-spinner" style={{ margin: '0 auto' }} /></div>

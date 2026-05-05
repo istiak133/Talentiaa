@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { matchResumeToJob } from '../../lib/gemini';
+import { matchResumeToJob } from '../../lib/grok';
 import { ArrowLeft, Upload, Loader2, CheckCircle, Briefcase, MapPin, Building, Sparkles, Target, AlertCircle, FileText, ChevronRight, CalendarX2, FileEdit, Calendar } from 'lucide-react';
 import type { Job } from '../../types/database';
 

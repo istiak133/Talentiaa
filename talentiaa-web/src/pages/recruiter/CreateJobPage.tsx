@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { ArrowLeft, Sparkles, Save, Send, Loader2, Wand2, Briefcase, MapPin, DollarSign, Calendar, Target, CheckCircle2, AlertCircle, Eye, EyeOff, Users, Sliders } from 'lucide-react';
 import type { JobType, WorkplaceType, ExperienceLevel, JobStatus } from '../../types/database';
-import { generateJobPost, suggestSkills } from '../../lib/gemini';
+import { generateJobPost, suggestSkills } from '../../lib/grok';
 
 export default function CreateJobPage() {
   const { profile } = useAuth();
