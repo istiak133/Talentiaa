@@ -55,7 +55,7 @@ export default function CandidateDashboard() {
             <SideItem icon={<LayoutDashboard size={17} />} label="Dashboard" active />
             <SideItem icon={<Briefcase size={17} />} label="Browse Jobs" onClick={() => navigate('/')} />
             <SideItem icon={<UserCircle size={17} />} label="My Profile" onClick={() => navigate('/candidate/profile')} />
-            <SideItem icon={<Settings size={17} />} label="Settings" />
+            <SideItem icon={<Settings size={17} />} label="Settings" onClick={() => navigate('/candidate/notifications')} />
           </div>
         </nav>
         <div style={{ padding: '1rem 0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>

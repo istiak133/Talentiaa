@@ -12,6 +12,7 @@ import RecruiterDashboard from './pages/dashboard/RecruiterDashboard';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
 import CreateJobPage from './pages/recruiter/CreateJobPage';
 import ApplyJobPage from './pages/candidate/ApplyJobPage';
+import NotificationPreferencesPage from './pages/candidate/NotificationPreferencesPage';
 import JobBoardPage from './pages/public/JobBoardPage';
 
 export default function App() {
@@ -56,6 +57,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/candidate/notifications"
+            element={
+              <ProtectedRoute allowedRoles={['candidate']}>
+                <NotificationPreferencesPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Protected: Recruiter */}
           <Route
@@ -71,6 +80,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['recruiter']}>
                 <CreateJobPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recruiter/notifications"
+            element={
+              <ProtectedRoute allowedRoles={['recruiter']}>
+                <NotificationPreferencesPage />
               </ProtectedRoute>
             }
           />

@@ -18,7 +18,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Applicant, ApplicationStage } from '../types/database';
-import { Mail, Calendar, TrendingUp, GripVertical, X, Target, FileText } from 'lucide-react';
+import { Mail, Calendar, TrendingUp, GripVertical, X, Target, FileText, CheckSquare, Square, ArrowRightCircle } from 'lucide-react';
 
 const STAGES: ApplicationStage[] = ['REVIEW', 'INTERVIEW', 'OFFER', 'HIRED', 'REJECTED'];
 
@@ -31,6 +31,8 @@ export default function KanbanBoard({ applicants, onStageChange }: KanbanBoardPr
   const [activeId, setActiveId] = useState<string | null>(null);
   const [localApplicants, setLocalApplicants] = useState<Applicant[]>(applicants);
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkTarget, setBulkTarget] = useState<ApplicationStage | ''>('');
 
   React.useEffect(() => {
     // Robust sync with prop
@@ -112,12 +114,72 @@ export default function KanbanBoard({ applicants, onStageChange }: KanbanBoardPr
     }
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (stage: ApplicationStage) => {
+    const stageIds = columns[stage].map(a => a.id);
+    const allSelected = stageIds.every(id => selectedIds.has(id));
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      stageIds.forEach(id => allSelected ? next.delete(id) : next.add(id));
+      return next;
+    });
+  };
+
+  const handleBulkStageChange = async () => {
+    if (!bulkTarget || selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    // Optimistic update
+    setLocalApplicants(prev => prev.map(a => ids.includes(a.id) ? { ...a, current_stage: bulkTarget as ApplicationStage } : a));
+    setSelectedIds(new Set());
+    setBulkTarget('');
+    // Persist each
+    for (const id of ids) {
+      await onStageChange(id, bulkTarget as ApplicationStage);
+    }
+  };
+
   return (
     <>
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.85rem 1.25rem', background: 'var(--primary-light)', borderRadius: '14px', marginBottom: '1.25rem', animation: 'fadeIn 0.3s ease', border: '1px solid rgba(0,113,227,0.15)' }}>
+          <CheckSquare size={18} color="var(--primary)" />
+          <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--primary)' }}>{selectedIds.size} selected</span>
+          <select
+            value={bulkTarget}
+            onChange={e => setBulkTarget(e.target.value as ApplicationStage)}
+            style={{ padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.82rem', fontWeight: 600, background: 'white', cursor: 'pointer' }}
+          >
+            <option value="">Move to...</option>
+            {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <button
+            onClick={handleBulkStageChange}
+            disabled={!bulkTarget}
+            className="btn btn-primary"
+            style={{ padding: '0.4rem 1rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: bulkTarget ? 1 : 0.5 }}
+          >
+            <ArrowRightCircle size={15} /> Move
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Clear
+          </button>
+        </div>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
         <div style={{ display: 'flex', gap: '1.25rem', overflowX: 'auto', paddingBottom: '1rem', minHeight: '600px' }}>
           {STAGES.map((stage) => (
-            <KanbanColumn key={stage} stage={stage} tasks={columns[stage]} onReview={setSelectedApplicant} />
+            <KanbanColumn key={stage} stage={stage} tasks={columns[stage]} onReview={setSelectedApplicant} selectedIds={selectedIds} onToggleSelect={toggleSelect} onToggleSelectAll={toggleSelectAll} />
           ))}
         </div>
         <DragOverlay>
@@ -183,10 +245,11 @@ export default function KanbanBoard({ applicants, onStageChange }: KanbanBoardPr
 
 import { useDroppable } from '@dnd-kit/core';
 
-function KanbanColumn({ stage, tasks, onReview }: { stage: ApplicationStage, tasks: Applicant[], onReview: (app: Applicant) => void }) {
+function KanbanColumn({ stage, tasks, onReview, selectedIds, onToggleSelect, onToggleSelectAll }: { stage: ApplicationStage, tasks: Applicant[], onReview: (app: Applicant) => void, selectedIds: Set<string>, onToggleSelect: (id: string) => void, onToggleSelectAll: (stage: ApplicationStage) => void }) {
   const { setNodeRef } = useDroppable({ id: stage, data: { type: 'Column', stage } });
   const stageTitles: Record<ApplicationStage, string> = { REVIEW: 'Review', INTERVIEW: 'Interview', OFFER: 'Offer', HIRED: 'Hired', REJECTED: 'Rejected' };
   const stageColors: Record<ApplicationStage, string> = { REVIEW: 'var(--primary)', INTERVIEW: 'var(--info)', OFFER: 'var(--warning)', HIRED: 'var(--success)', REJECTED: 'var(--error)' };
+  const allSelected = tasks.length > 0 && tasks.every(t => selectedIds.has(t.id));
 
   return (
     <div ref={setNodeRef} style={{ flex: '0 0 280px', background: 'var(--bg-body)', borderRadius: '16px', padding: '1.25rem', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -195,12 +258,19 @@ function KanbanColumn({ stage, tasks, onReview }: { stage: ApplicationStage, tas
           <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: stageColors[stage] }} />
           {stageTitles[stage]}
         </h3>
-        <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'white', padding: '2px 10px', borderRadius: '12px', border: '1px solid var(--border-light)', color: 'var(--text-muted)' }}>{tasks.length}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {tasks.length > 0 && (
+            <button onClick={() => onToggleSelectAll(stage)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }} title="Select all">
+              {allSelected ? <CheckSquare size={14} color="var(--primary)" /> : <Square size={14} color="#cbd5e1" />}
+            </button>
+          )}
+          <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'white', padding: '2px 10px', borderRadius: '12px', border: '1px solid var(--border-light)', color: 'var(--text-muted)' }}>{tasks.length}</span>
+        </div>
       </div>
       <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
         <div style={{ minHeight: '300px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {tasks.map((task) => (
-            <SortableKanbanCard key={task.id} applicant={task} onReview={onReview} />
+            <SortableKanbanCard key={task.id} applicant={task} onReview={onReview} isSelected={selectedIds.has(task.id)} onToggleSelect={onToggleSelect} />
           ))}
         </div>
       </SortableContext>
@@ -208,24 +278,33 @@ function KanbanColumn({ stage, tasks, onReview }: { stage: ApplicationStage, tas
   );
 }
 
-function SortableKanbanCard({ applicant, onReview }: { applicant: Applicant, onReview: (app: Applicant) => void }) {
+function SortableKanbanCard({ applicant, onReview, isSelected, onToggleSelect }: { applicant: Applicant, onReview: (app: Applicant) => void, isSelected: boolean, onToggleSelect: (id: string) => void }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: applicant.id, data: { type: 'Task', applicant } });
   const style = { transition, transform: CSS.Transform.toString(transform), opacity: isDragging ? 0.3 : 1 };
   
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <KanbanCard applicant={applicant} onReview={onReview} />
+      <KanbanCard applicant={applicant} onReview={onReview} isSelected={isSelected} onToggleSelect={onToggleSelect} />
     </div>
   );
 }
 
-function KanbanCard({ applicant, isOverlay, onReview }: { applicant: Applicant, isOverlay?: boolean, onReview?: (app: Applicant) => void }) {
+function KanbanCard({ applicant, isOverlay, onReview, isSelected, onToggleSelect }: { applicant: Applicant, isOverlay?: boolean, onReview?: (app: Applicant) => void, isSelected?: boolean, onToggleSelect?: (id: string) => void }) {
   const score = applicant.score_overall || 0;
   const scoreColor = score >= 70 ? 'var(--success)' : score >= 50 ? 'var(--warning)' : 'var(--error)';
 
   return (
     <div style={{ background: 'white', padding: '1.25rem', borderRadius: '14px', border: '1px solid var(--border-light)', boxShadow: isOverlay ? 'var(--shadow-lg)' : 'var(--shadow-sm)', cursor: 'grab', position: 'relative' }}>
       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1rem' }}>
+        {onToggleSelect && (
+          <button
+            onPointerDown={e => e.stopPropagation()}
+            onClick={e => { e.stopPropagation(); onToggleSelect(applicant.id); }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+          >
+            {isSelected ? <CheckSquare size={16} color="var(--primary)" /> : <Square size={16} color="#cbd5e1" />}
+          </button>
+        )}
         <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
           {applicant.users?.full_name?.charAt(0)}
         </div>

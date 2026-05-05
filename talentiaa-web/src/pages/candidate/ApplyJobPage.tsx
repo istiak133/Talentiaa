@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { matchResumeToJob } from '../../lib/gemini';
-import { ArrowLeft, Upload, Loader2, CheckCircle, Briefcase, MapPin, Building, Sparkles, Target, AlertCircle, FileText, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, CheckCircle, Briefcase, MapPin, Building, Sparkles, Target, AlertCircle, FileText, ChevronRight, CalendarX2, FileEdit, Calendar } from 'lucide-react';
 import type { Job } from '../../types/database';
 
 export default function ApplyJobPage() {
@@ -19,6 +19,10 @@ export default function ApplyJobPage() {
   const [score, setScore] = useState<{ score: number; breakdown: any; summary: string; missing_skills?: string[]; improvement_suggestion?: string } | null>(null);
   const [applied, setApplied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [coverLetter, setCoverLetter] = useState('');
+
+  // Deadline check
+  const isExpired = job ? new Date(job.application_deadline) < new Date(new Date().toDateString()) : false;
 
   useEffect(() => {
     if (!jobId) return;
@@ -104,18 +108,25 @@ export default function ApplyJobPage() {
         resumeId = resumeData?.id;
       }
 
+      const candidateScore = score?.score || 0;
+      const jobThreshold = job.threshold_score || 70;
+      const isHiddenPool = candidateScore < jobThreshold;
+
       const { error: appErr } = await supabase.from('applications').insert([{
         job_id: jobId,
         candidate_id: profile.id,
         resume_id: resumeId,
-        score_overall: score?.score || 0,
+        score_overall: candidateScore,
         score_breakdown: {
           skills: score?.breakdown?.skills || 0,
           experience: score?.breakdown?.experience || 0,
           education: score?.breakdown?.education || 0,
           missing_skills: score?.missing_skills || [],
-          improvement_suggestion: score?.improvement_suggestion || ""
+          improvement_suggestion: score?.improvement_suggestion || "",
+          cover_letter: coverLetter.trim() || null,
         },
+        hidden_pool: isHiddenPool,
+        threshold_at_apply: jobThreshold,
       }]);
       if (appErr) throw appErr;
 
@@ -175,6 +186,21 @@ export default function ApplyJobPage() {
           </div>
         </div>
 
+        {/* Deadline Warning */}
+        {isExpired && (
+          <div style={{ padding: '1.25rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '16px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ width: '48px', height: '48px', background: '#fee2e2', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CalendarX2 size={24} color="var(--error)" />
+            </div>
+            <div>
+              <h4 style={{ fontWeight: 700, color: 'var(--error)', fontSize: '0.95rem', marginBottom: '0.15rem' }}>Application Deadline Expired</h4>
+              <p style={{ fontSize: '0.82rem', color: '#b91c1c' }}>
+                এই জবের আবেদনের শেষ তারিখ ছিল <strong>{new Date(job!.application_deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>। আর আবেদন করা যাচ্ছে না।
+              </p>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div style={{ padding: '1rem', background: '#fee2e2', color: 'var(--error)', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
             <AlertCircle size={20} /> {error}
@@ -203,10 +229,30 @@ export default function ApplyJobPage() {
             </div>
 
             <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
-              <button onClick={handleScore} disabled={scoring} className="btn btn-primary" style={{ padding: '0.8rem 2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--secondary)' }}>
+              <button onClick={handleScore} disabled={scoring || isExpired} className="btn btn-primary" style={{ padding: '0.8rem 2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', background: isExpired ? '#94a3b8' : 'var(--secondary)', cursor: isExpired ? 'not-allowed' : 'pointer' }}>
                 {scoring ? <span className="loading-spinner-sm" /> : <><Sparkles size={18} /> Analyze with AI</>}
               </button>
             </div>
+          </div>
+
+          {/* Cover Letter */}
+          <div style={{ background: 'white', borderRadius: '24px', padding: '2rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <FileEdit size={20} color="var(--primary)" /> Cover Letter <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)' }}>(Optional)</span>
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: 1.5 }}>
+              আপনার মোটিভেশন এবং এই পদে কেন আপনি সেরা — সংক্ষেপে লিখুন।
+            </p>
+            <textarea
+              value={coverLetter}
+              onChange={e => setCoverLetter(e.target.value)}
+              rows={5}
+              maxLength={2000}
+              disabled={isExpired}
+              style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1.5px solid var(--border-light)', outline: 'none', fontSize: '0.9rem', resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6 }}
+              placeholder="Why are you the best fit for this role? Share your motivation..."
+            />
+            <div style={{ textAlign: 'right', fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>{coverLetter.length}/2000</div>
           </div>
 
           {/* AI Score Feedback */}
@@ -250,8 +296,8 @@ export default function ApplyJobPage() {
             </div>
           )}
 
-          <button onClick={handleApply} disabled={loading} className="btn btn-primary" style={{ width: '100%', padding: '1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-            {loading ? <span className="loading-spinner-sm" /> : <>Confirm & Submit Application <ChevronRight size={20} /></>}
+          <button onClick={handleApply} disabled={loading || isExpired} className="btn btn-primary" style={{ width: '100%', padding: '1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', background: isExpired ? '#94a3b8' : undefined, cursor: isExpired ? 'not-allowed' : 'pointer' }}>
+            {loading ? <span className="loading-spinner-sm" /> : isExpired ? <>Deadline Expired — Cannot Apply</> : <>Confirm & Submit Application <ChevronRight size={20} /></>}
           </button>
         </div>
       </div>

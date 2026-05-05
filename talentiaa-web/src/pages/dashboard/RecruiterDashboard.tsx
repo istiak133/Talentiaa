@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { LogOut, Briefcase, Users, Plus, ChevronDown, KanbanSquare, TrendingUp, LayoutDashboard, RefreshCcw } from 'lucide-react';
+import { LogOut, Briefcase, Users, Plus, ChevronDown, KanbanSquare, TrendingUp, LayoutDashboard, RefreshCcw, EyeOff, RotateCcw, Target } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import type { ApplicationStage, Applicant } from '../../types/database';
 import KanbanBoard from '../../components/KanbanBoard';
@@ -20,7 +20,7 @@ export default function RecruiterDashboard() {
   const [jobs, setJobs] = useState<JobWithApplicants[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'pipeline'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'pipeline' | 'hidden'>('list');
   const [selectedPipelineJobId, setSelectedPipelineJobId] = useState<string | null>(null);
 
   const fetchJobs = useCallback(async () => {
@@ -36,7 +36,7 @@ export default function RecruiterDashboard() {
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
 
   const fetchApplicants = async (jobId: string) => {
-    const { data, error } = await supabase.from('applications').select(`id, candidate_id, score_overall, score_breakdown, current_stage, applied_at, users!candidate_id (full_name, email), resumes!resume_id (file_url)`).eq('job_id', jobId).order('score_overall', { ascending: false, nullsFirst: false });
+    const { data, error } = await supabase.from('applications').select(`id, candidate_id, score_overall, score_breakdown, current_stage, hidden_pool, applied_at, users!candidate_id (full_name, email), resumes!resume_id (file_url)`).eq('job_id', jobId).order('score_overall', { ascending: false, nullsFirst: false });
     if (error) return [];
     return (data as any) || [];
   };
@@ -62,11 +62,58 @@ export default function RecruiterDashboard() {
   }, [viewMode, selectedPipelineJobId, jobs]);
 
   const handleStageChange = async (applicantId: string, newStage: ApplicationStage) => {
+    // Find the applicant and their job for the email notification
+    let candidateEmail = '';
+    let candidateName = '';
+    let jobTitle = '';
+    for (const job of jobs) {
+      const app = job._applicants?.find(a => a.id === applicantId);
+      if (app) {
+        candidateEmail = app.users?.email || '';
+        candidateName = app.users?.full_name || '';
+        jobTitle = job.title;
+        break;
+      }
+    }
+
+    // Optimistic UI update
     setJobs(prev => prev.map(job => ({ ...job, _applicants: job._applicants?.map(app => app.id === applicantId ? { ...app, current_stage: newStage } : app) })));
     await supabase.from('applications').update({ current_stage: newStage }).eq('id', applicantId);
+
+    // Send email notification to candidate
+    if (candidateEmail && import.meta.env.VITE_EMAILJS_SERVICE_ID) {
+      const stageLabels: Record<string, string> = { REVIEW: 'Under Review', INTERVIEW: 'Interview Stage', OFFER: 'Offer Extended', HIRED: 'Hired! 🎉', REJECTED: 'Not Selected' };
+      emailjs.send(
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        {
+          candidate_name: candidateName,
+          job_title: jobTitle,
+          company_name: 'Talentiaa',
+          status: `Your application has moved to: ${stageLabels[newStage] || newStage}`,
+          to_email: candidateEmail,
+        },
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+      ).catch(err => console.error('EmailJS notification failed:', err));
+    }
   };
 
   const totalApplicants = jobs.reduce((s, j) => s + (j._applicants?.length || 0), 0);
+
+  // Hidden pool helpers
+  const allApplicants = jobs.flatMap(j => (j._applicants || []).map(a => ({ ...a, _jobTitle: j.title, _jobId: j.id })));
+  const hiddenPoolApplicants = allApplicants.filter(a => a.hidden_pool);
+
+  const handleRecoverFromHiddenPool = async (applicantId: string) => {
+    // Optimistic update: remove from hidden pool, set to REVIEW
+    setJobs(prev => prev.map(job => ({
+      ...job,
+      _applicants: job._applicants?.map(app =>
+        app.id === applicantId ? { ...app, hidden_pool: false, current_stage: 'REVIEW' as ApplicationStage } : app
+      )
+    })));
+    await supabase.from('applications').update({ hidden_pool: false, current_stage: 'review' }).eq('id', applicantId);
+  };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-body)' }}>
@@ -80,6 +127,7 @@ export default function RecruiterDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <SideItem icon={<LayoutDashboard size={17} />} label="Overview" active={viewMode === 'list'} onClick={() => setViewMode('list')} />
             <SideItem icon={<KanbanSquare size={17} />} label="Pipeline" active={viewMode === 'pipeline'} onClick={() => setViewMode('pipeline')} />
+            <SideItem icon={<EyeOff size={17} />} label="Hidden Pool" active={viewMode === 'hidden'} onClick={() => setViewMode('hidden')} badge={hiddenPoolApplicants.length} />
             <SideItem icon={<Briefcase size={17} />} label="My Jobs" />
           </div>
         </nav>
@@ -114,14 +162,79 @@ export default function RecruiterDashboard() {
         </header>
 
         {/* Stats */}
-        <div className="stagger-children" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+        <div className="stagger-children" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
           <StatCard label="Posted Jobs" value={jobs.length} color="var(--primary)" />
           <StatCard label="Total Applicants" value={totalApplicants} color="#34c759" />
           <StatCard label="Active Jobs" value={jobs.filter(j => j.status === 'published').length} color="#5ac8fa" />
+          <StatCard label="Hidden Pool" value={hiddenPoolApplicants.length} color="#ff9f0a" />
         </div>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '4rem' }}><div className="loading-spinner" style={{ margin: '0 auto' }} /></div>
+        ) : viewMode === 'hidden' ? (
+          /* Hidden Pool View */
+          <div style={{ animation: 'fadeInUp 0.4s var(--ease-apple)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <EyeOff size={20} color="#ff9f0a" /> Hidden Pool
+                </h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                  থ্রেশহোল্ডের নিচে স্কোর পাওয়া ক্যান্ডিডেটরা এখানে থাকে। আপনি তাদের রিকভার করে পাইপলাইনে ফিরিয়ে আনতে পারেন।
+                </p>
+              </div>
+            </div>
+            {hiddenPoolApplicants.length === 0 ? (
+              <div style={{ background: 'white', padding: '3.5rem', textAlign: 'center', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)' }}>
+                <EyeOff size={36} style={{ marginBottom: '1rem', opacity: 0.15, color: 'var(--text-muted)' }} />
+                <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>কোনো ক্যান্ডিডেট হিডেন পুলে নেই।</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {hiddenPoolApplicants.map((app, i) => (
+                  <div key={app.id} style={{ background: 'white', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-xl)', padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'var(--transition-smooth)', animation: `fadeInUp 0.3s var(--ease-apple) ${i * 0.04}s both` }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-md)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
+                  >
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.9rem', color: '#f59e0b' }}>
+                        {app.users?.full_name?.charAt(0)}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>{app.users?.full_name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{app.users?.email}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Job: {app._jobTitle}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Score</div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--error)' }}>{app.score_overall}%</div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        {app.score_breakdown && (
+                          <div style={{ display: 'flex', gap: '0.4rem' }}>
+                            {[{k: 'skills', c: '#0071e3'}, {k: 'experience', c: '#5ac8fa'}, {k: 'education', c: '#34c759'}].map(s => (
+                              <span key={s.k} style={{ fontSize: '0.6rem', fontWeight: 700, color: s.c, background: `${s.c}10`, padding: '2px 6px', borderRadius: '6px' }}>
+                                {s.k.charAt(0).toUpperCase()}: {app.score_breakdown?.[s.k] || 0}%
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRecoverFromHiddenPool(app.id)}
+                        className="btn btn-primary"
+                        style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#f59e0b', border: 'none' }}
+                      >
+                        <RotateCcw size={14} /> Recover
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         ) : viewMode === 'list' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {jobs.length === 0 ? (
@@ -172,15 +285,14 @@ export default function RecruiterDashboard() {
                 {jobs.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
               </select>
             </div>
-            {selectedPipelineJobId ? (
-              jobs.find(j => j.id === selectedPipelineJobId)?._applicants?.length === 0 ? (
-                <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}><Users size={32} style={{ marginBottom: '0.75rem', opacity: 0.15 }} /><p style={{ fontWeight: 500 }}>No applicants yet.</p></div>
-              ) : jobs.find(j => j.id === selectedPipelineJobId)?._applicants ? (
-                <KanbanBoard applicants={jobs.find(j => j.id === selectedPipelineJobId)!._applicants!} onStageChange={handleStageChange} />
+            {selectedPipelineJobId ? (() => {
+              const pipelineApplicants = (jobs.find(j => j.id === selectedPipelineJobId)?._applicants || []).filter(a => !a.hidden_pool);
+              return pipelineApplicants.length === 0 ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}><Users size={32} style={{ marginBottom: '0.75rem', opacity: 0.15 }} /><p style={{ fontWeight: 500 }}>No applicants in pipeline.</p></div>
               ) : (
-                <div style={{ padding: '3rem', textAlign: 'center' }}><div className="loading-spinner" style={{ margin: '0 auto' }} /></div>
-              )
-            ) : <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Select a job.</p>}
+                <KanbanBoard applicants={pipelineApplicants} onStageChange={handleStageChange} />
+              );
+            })() : <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Select a job.</p>}
           </div>
         )}
       </div>
@@ -188,10 +300,11 @@ export default function RecruiterDashboard() {
   );
 }
 
-function SideItem({ icon, label, active, onClick }: { icon: any; label: string; active?: boolean; onClick?: () => void }) {
+function SideItem({ icon, label, active, onClick, badge }: { icon: any; label: string; active?: boolean; onClick?: () => void; badge?: number }) {
   return (
     <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', width: '100%', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-sm)', border: 'none', background: active ? 'rgba(255,255,255,0.08)' : 'transparent', color: active ? 'white' : 'rgba(255,255,255,0.45)', fontWeight: active ? 600 : 400, fontSize: '0.88rem', cursor: 'pointer', transition: 'var(--transition-smooth)', textAlign: 'left' }}>
       {icon}{label}
+      {badge !== undefined && badge > 0 && <span style={{ marginLeft: 'auto', background: '#ff9f0a', color: 'white', fontSize: '0.6rem', padding: '0.1rem 0.4rem', borderRadius: 'var(--radius-full)', fontWeight: 700 }}>{badge}</span>}
     </button>
   );
 }

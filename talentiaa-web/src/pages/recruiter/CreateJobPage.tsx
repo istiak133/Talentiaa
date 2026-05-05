@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { ArrowLeft, Sparkles, Save, Send, Loader2, Wand2, Briefcase, MapPin, DollarSign, Calendar, Target, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Sparkles, Save, Send, Loader2, Wand2, Briefcase, MapPin, DollarSign, Calendar, Target, CheckCircle2, AlertCircle, Eye, EyeOff, Users, Sliders } from 'lucide-react';
 import type { JobType, WorkplaceType, ExperienceLevel, JobStatus } from '../../types/database';
 import { generateJobPost, suggestSkills } from '../../lib/gemini';
 
@@ -24,11 +24,16 @@ export default function CreateJobPage() {
     location: '',
     salary_min: '',
     salary_max: '',
+    salary_visible: true,
     experience_level: 'mid' as ExperienceLevel,
     required_skills: '',
     description: '',
     application_deadline: '',
-    threshold_score: '70'
+    hiring_count: '1',
+    threshold_score: '70',
+    scoring_skills: 50,
+    scoring_experience: 35,
+    scoring_education: 15,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -90,6 +95,10 @@ export default function CreateJobPage() {
         throw new Error('Title, Location, Description, and Deadline are required to publish.');
       }
       const skillsArray = formData.required_skills.split(',').map(s => s.trim()).filter(Boolean);
+      const scoringSum = formData.scoring_skills + formData.scoring_experience + formData.scoring_education;
+      if (scoringSum !== 100) {
+        throw new Error(`Scoring weights must sum to 100 (currently ${scoringSum}).`);
+      }
       const { error: insertError } = await supabase.from('jobs').insert([{
         recruiter_id: profile.id,
         title: formData.title,
@@ -100,11 +109,18 @@ export default function CreateJobPage() {
         salary_min: formData.salary_min ? parseFloat(formData.salary_min) : null,
         salary_max: formData.salary_max ? parseFloat(formData.salary_max) : null,
         salary_currency: 'BDT',
+        salary_visible: formData.salary_visible,
         experience_level: formData.experience_level,
         required_skills: skillsArray,
         description: formData.description,
         application_deadline: formData.application_deadline || null,
+        hiring_count: parseInt(formData.hiring_count) || 1,
         threshold_score: parseFloat(formData.threshold_score),
+        scoring_config: {
+          skillsWeight: formData.scoring_skills,
+          experienceWeight: formData.scoring_experience,
+          educationWeight: formData.scoring_education,
+        },
         status,
         ...(status === 'published' ? { published_at: new Date().toISOString() } : {})
       }]);
@@ -277,11 +293,33 @@ export default function CreateJobPage() {
                   <input type="number" name="salary_min" value={formData.salary_min} onChange={handleChange} placeholder="e.g. 50000" />
                 </div>
               </div>
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
                 <label>Max Salary (BDT)</label>
                 <div className="input-wrapper">
                   <input type="number" name="salary_max" value={formData.salary_max} onChange={handleChange} placeholder="e.g. 100000" />
                 </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--bg-body)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {formData.salary_visible ? <Eye size={16} color="var(--primary)" /> : <EyeOff size={16} color="var(--text-muted)" />}
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--secondary)' }}>Salary Visible</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, salary_visible: !prev.salary_visible }))}
+                  style={{
+                    width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                    background: formData.salary_visible ? 'var(--primary)' : '#d1d5db',
+                    position: 'relative', transition: 'background 0.3s ease',
+                  }}
+                >
+                  <div style={{
+                    width: '18px', height: '18px', borderRadius: '50%', background: 'white',
+                    position: 'absolute', top: '3px',
+                    left: formData.salary_visible ? '23px' : '3px',
+                    transition: 'left 0.3s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  }} />
+                </button>
               </div>
             </FormSection>
 
@@ -293,6 +331,61 @@ export default function CreateJobPage() {
                   <input name="location" value={formData.location} onChange={handleChange} placeholder="e.g. Dhaka, Bangladesh" required />
                 </div>
               </div>
+            </FormSection>
+
+            <FormSection icon={<Users size={20} color="var(--primary)" />} title="Hiring">
+              <div className="form-group">
+                <label>How many people to hire?</label>
+                <div className="input-wrapper">
+                  <Users size={18} className="input-icon" />
+                  <input type="number" name="hiring_count" value={formData.hiring_count} onChange={handleChange} min="1" max="100" placeholder="1" />
+                </div>
+              </div>
+            </FormSection>
+
+            <FormSection icon={<Sliders size={20} color="var(--primary)" />} title="AI Scoring Weights">
+              {(() => {
+                const sum = formData.scoring_skills + formData.scoring_experience + formData.scoring_education;
+                const isValid = sum === 100;
+                return (
+                  <>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1.25rem', lineHeight: 1.5 }}>
+                      AI ক্যান্ডিডেট স্কোরিং এ প্রতিটি ক্যাটাগরির ওয়েট সেট করুন। মোট <b>100</b> হতে হবে।
+                    </p>
+                    {[{key: 'scoring_skills', label: 'Skills', color: '#0071e3'}, {key: 'scoring_experience', label: 'Experience', color: '#5ac8fa'}, {key: 'scoring_education', label: 'Education', color: '#34c759'}].map(item => (
+                      <div key={item.key} style={{ marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.color }} />
+                            {item.label}
+                          </label>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: item.color }}>{(formData as any)[item.key]}%</span>
+                        </div>
+                        <input
+                          type="range" min="0" max="100" step="5"
+                          value={(formData as any)[item.key]}
+                          onChange={e => setFormData(prev => ({ ...prev, [item.key]: parseInt(e.target.value) }))}
+                          style={{ width: '100%', accentColor: item.color, height: '6px', cursor: 'pointer' }}
+                        />
+                      </div>
+                    ))}
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '0.65rem 1rem', borderRadius: '10px', marginTop: '0.5rem',
+                      background: isValid ? 'rgba(52,199,89,0.08)' : 'rgba(255,59,48,0.08)',
+                      border: `1px solid ${isValid ? 'rgba(52,199,89,0.2)' : 'rgba(255,59,48,0.2)'}`,
+                    }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isValid ? 'var(--success)' : 'var(--error)' }}>
+                        Total: {sum}%
+                      </span>
+                      {isValid
+                        ? <CheckCircle2 size={16} color="var(--success)" />
+                        : <AlertCircle size={16} color="var(--error)" />
+                      }
+                    </div>
+                  </>
+                );
+              })()}
             </FormSection>
 
             <div style={{ background: 'var(--secondary)', borderRadius: '20px', padding: '1.5rem', color: 'white' }}>

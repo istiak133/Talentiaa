@@ -61,6 +61,7 @@ export interface Applicant {
   score_overall: number | null;
   score_breakdown: any;
   current_stage: ApplicationStage;
+  hidden_pool: boolean;
   applied_at: string;
   users: { full_name: string; email: string } | null;
   resumes?: { file_url: string } | null;
