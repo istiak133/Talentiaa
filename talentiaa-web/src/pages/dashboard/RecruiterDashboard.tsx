@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -9,6 +9,7 @@ import type { ApplicationStage, Applicant } from '../../types/database';
 import KanbanBoard from '../../components/KanbanBoard';
 import NotificationBell from '../../components/NotificationBell';
 import AnimatedBackground from '../../components/AnimatedBackground';
+import { SideItem, StatCard } from '../../components/DashboardShared';
 
 interface JobWithApplicants {
   id: string; title: string; status: string; location: string; published_at: string | null;
@@ -55,12 +56,15 @@ export default function RecruiterDashboard() {
     if (job && !job._applicants) { const d = await fetchApplicants(jobId); setJobs(prev => prev.map(j => j.id === jobId ? { ...j, _applicants: d } : j)); }
   };
 
+  // Track which jobs have had applicants fetched to avoid infinite loop
+  const fetchedApplicantJobIds = useRef<Set<string>>(new Set());
+
   useEffect(() => {
-    if (viewMode === 'pipeline' && selectedPipelineJobId) {
-      const job = jobs.find(j => j.id === selectedPipelineJobId);
-      if (job && !job._applicants) fetchApplicants(selectedPipelineJobId).then(d => setJobs(prev => prev.map(j => j.id === selectedPipelineJobId ? { ...j, _applicants: d } : j)));
+    if (viewMode === 'pipeline' && selectedPipelineJobId && !fetchedApplicantJobIds.current.has(selectedPipelineJobId)) {
+      fetchedApplicantJobIds.current.add(selectedPipelineJobId);
+      fetchApplicants(selectedPipelineJobId).then(d => setJobs(prev => prev.map(j => j.id === selectedPipelineJobId ? { ...j, _applicants: d } : j)));
     }
-  }, [viewMode, selectedPipelineJobId, jobs]);
+  }, [viewMode, selectedPipelineJobId]);
 
   const handleStageChange = async (applicantId: string, newStage: ApplicationStage) => {
     // Find the applicant and their job for the email notification
@@ -83,7 +87,7 @@ export default function RecruiterDashboard() {
 
     // Send email notification to candidate
     if (candidateEmail && import.meta.env.VITE_EMAILJS_SERVICE_ID) {
-      const stageLabels: Record<string, string> = { REVIEW: 'Under Review', INTERVIEW: 'Interview Stage', OFFER: 'Offer Extended', HIRED: 'Hired! 🎉', REJECTED: 'Not Selected' };
+      const stageLabels: Record<string, string> = { review: 'Under Review', interview: 'Interview Stage', offer: 'Offer Extended', hired: 'Hired! 🎉', rejected: 'Not Selected' };
       emailjs.send(
         import.meta.env.VITE_EMAILJS_SERVICE_ID,
         import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
@@ -110,7 +114,7 @@ export default function RecruiterDashboard() {
     setJobs(prev => prev.map(job => ({
       ...job,
       _applicants: job._applicants?.map(app =>
-        app.id === applicantId ? { ...app, hidden_pool: false, current_stage: 'REVIEW' as ApplicationStage } : app
+        app.id === applicantId ? { ...app, hidden_pool: false, current_stage: 'review' as ApplicationStage } : app
       )
     })));
     await supabase.from('applications').update({ hidden_pool: false, current_stage: 'review' }).eq('id', applicantId);
@@ -363,27 +367,6 @@ export default function RecruiterDashboard() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function SideItem({ icon, label, active, onClick, badge }: { icon: any; label: string; active?: boolean; onClick?: () => void; badge?: number }) {
-  return (
-    <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', width: '100%', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-sm)', border: 'none', background: active ? 'rgba(255,255,255,0.08)' : 'transparent', color: active ? 'white' : 'rgba(255,255,255,0.45)', fontWeight: active ? 600 : 400, fontSize: '0.88rem', cursor: 'pointer', transition: 'var(--transition-smooth)', textAlign: 'left' }}>
-      {icon}{label}
-      {badge !== undefined && badge > 0 && <span style={{ marginLeft: 'auto', background: '#ff9f0a', color: 'white', fontSize: '0.6rem', padding: '0.1rem 0.4rem', borderRadius: 'var(--radius-full)', fontWeight: 700 }}>{badge}</span>}
-    </button>
-  );
-}
-
-function StatCard({ label, value, color }: { label: string; value: any; color: string }) {
-  return (
-    <div style={{ background: 'white', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)', transition: 'var(--transition-smooth)' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-lg)'; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}>
-      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, marginBottom: '0.75rem' }} />
-      <div style={{ fontSize: '1.6rem', fontWeight: 700, letterSpacing: '-0.03em' }}>{value}</div>
-      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: '0.15rem' }}>{label}</div>
     </div>
   );
 }

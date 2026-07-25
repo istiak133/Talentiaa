@@ -7,6 +7,7 @@ import emailjs from '@emailjs/browser';
 import type { UserProfile, Job } from '../../types/database';
 import NotificationBell from '../../components/NotificationBell';
 import AnimatedBackground from '../../components/AnimatedBackground';
+import { SideItem, StatCard } from '../../components/DashboardShared';
 
 export default function AdminDashboard() {
   const { profile, signOut } = useAuth();
@@ -273,28 +274,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function SideItem({ icon, label, active, onClick, badge }: { icon: any; label: string; active?: boolean; onClick?: () => void; badge?: number }) {
-  return (
-    <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', width: '100%', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-sm)', border: 'none', background: active ? 'rgba(255,255,255,0.08)' : 'transparent', color: active ? 'white' : 'rgba(255,255,255,0.45)', fontWeight: active ? 600 : 400, fontSize: '0.88rem', cursor: 'pointer', transition: 'var(--transition-smooth)', textAlign: 'left' }}>
-      {icon}{label}
-      {badge !== undefined && badge > 0 && <span style={{ marginLeft: 'auto', background: 'var(--error)', color: 'white', fontSize: '0.6rem', padding: '0.1rem 0.4rem', borderRadius: 'var(--radius-full)', fontWeight: 700 }}>{badge}</span>}
-    </button>
-  );
-}
-
-function StatCard({ label, value, color, sub }: { label: string; value: any; color: string; sub: string }) {
-  return (
-    <div style={{ background: 'white', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)', transition: 'var(--transition-smooth)' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-lg)'; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}>
-      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, marginBottom: '0.75rem' }} />
-      <div style={{ fontSize: '1.6rem', fontWeight: 700, letterSpacing: '-0.03em' }}>{value}</div>
-      <div style={{ fontSize: '0.82rem', color: 'var(--secondary)', fontWeight: 600, marginTop: '0.15rem' }}>{label}</div>
-      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{sub}</div>
     </div>
   );
 }

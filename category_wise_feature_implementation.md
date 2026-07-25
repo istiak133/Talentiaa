@@ -2,7 +2,6 @@
 
 ## Scope Lock
 
-S_DB Pass: snPH%9$G5V_,-x/
 এই ফাইলে শুধু নিচের features include করা হয়েছে:
 1. Multi-Role System and Secure Authentication
 2. Smart Job Posting

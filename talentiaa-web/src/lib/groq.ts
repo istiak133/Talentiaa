@@ -1,3 +1,13 @@
+/**
+ * ⚠️ SECURITY WARNING: VITE_ prefixed env vars are bundled into the client-side
+ * JavaScript and visible in browser DevTools. This API key can be stolen.
+ *
+ * TODO (Production): Move Groq API calls to a Supabase Edge Function or backend
+ * proxy so the API key stays server-side. Example:
+ *   - Create `supabase/functions/groq-proxy/index.ts`
+ *   - Call it via `supabase.functions.invoke('groq-proxy', { body: { prompt } })`
+ *   - Store GROQ_API_KEY in Supabase secrets (not VITE_ prefix)
+ */
 const API_KEY = import.meta.env.VITE_GROQ_API_KEY || "";
 const URL = `https://api.groq.com/openai/v1/chat/completions`;
 

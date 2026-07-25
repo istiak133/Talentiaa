@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import LoginPage from './pages/auth/LoginPage';
 import AdminLoginPage from './pages/auth/AdminLoginPage';
 import SignupPage from './pages/auth/SignupPage';
@@ -17,6 +18,7 @@ import JobBoardPage from './pages/public/JobBoardPage';
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <BrowserRouter>
       <AuthProvider>
         <Routes>
@@ -32,15 +34,7 @@ export default function App() {
           {/* Public: Job Board */}
           <Route path="/jobs" element={<JobBoardPage />} />
 
-          {/* Protected: Candidate */}
-          <Route
-            path="/candidate/*"
-            element={
-              <ProtectedRoute allowedRoles={['candidate']}>
-                <CandidateDashboard />
-              </ProtectedRoute>
-            }
-          />
+          {/* Protected: Candidate — specific routes FIRST, wildcard LAST */}
           <Route
             path="/candidate/profile"
             element={
@@ -65,16 +59,16 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Protected: Recruiter */}
           <Route
-            path="/recruiter/*"
+            path="/candidate/*"
             element={
-              <ProtectedRoute allowedRoles={['recruiter']}>
-                <RecruiterDashboard />
+              <ProtectedRoute allowedRoles={['candidate']}>
+                <CandidateDashboard />
               </ProtectedRoute>
             }
           />
+
+          {/* Protected: Recruiter — specific routes FIRST, wildcard LAST */}
           <Route
             path="/recruiter/jobs/create"
             element={
@@ -88,6 +82,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['recruiter']}>
                 <NotificationPreferencesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recruiter/*"
+            element={
+              <ProtectedRoute allowedRoles={['recruiter']}>
+                <RecruiterDashboard />
               </ProtectedRoute>
             }
           />
@@ -110,5 +112,6 @@ export default function App() {
         </Routes>
       </AuthProvider>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }

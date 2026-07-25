@@ -159,11 +159,10 @@ export default function JobBoardPage() {
             </select>
             <select value={experience} onChange={e => setFilter('exp', e.target.value)} style={{ padding: '0 1rem', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', color: 'white', fontWeight: 500, fontSize: '0.88rem', cursor: 'pointer', outline: 'none' }}>
               <option value="" style={{ color: '#000' }}>Experience</option>
-              <option value="entry" style={{ color: '#000' }}>Entry Level</option>
+              <option value="junior" style={{ color: '#000' }}>Junior</option>
               <option value="mid" style={{ color: '#000' }}>Mid Level</option>
               <option value="senior" style={{ color: '#000' }}>Senior</option>
               <option value="lead" style={{ color: '#000' }}>Lead</option>
-              <option value="executive" style={{ color: '#000' }}>Executive</option>
             </select>
             {(keyword || jobType || workplace || experience) && (
               <button onClick={() => { setSearchInput(''); setSearchParams({}); }} style={{ padding: '0 0.85rem', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,59,48,0.2)', background: 'rgba(255,59,48,0.08)', color: '#ff6961', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={16} /></button>

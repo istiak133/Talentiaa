@@ -7,6 +7,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
 } from '@dnd-kit/core';
 import type { DragStartEvent, DragOverEvent, DragEndEvent } from '@dnd-kit/core';
 import {
@@ -20,7 +21,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Applicant, ApplicationStage } from '../types/database';
 import { Mail, Calendar, TrendingUp, GripVertical, X, Target, FileText, CheckSquare, Square, ArrowRightCircle } from 'lucide-react';
 
-const STAGES: ApplicationStage[] = ['REVIEW', 'INTERVIEW', 'OFFER', 'HIRED', 'REJECTED'];
+const STAGES: ApplicationStage[] = ['review', 'interview', 'offer', 'hired', 'rejected'];
 
 interface KanbanBoardProps {
   applicants: Applicant[];
@@ -41,17 +42,15 @@ export default function KanbanBoard({ applicants, onStageChange }: KanbanBoardPr
 
   const columns = useMemo(() => {
     const cols: Record<ApplicationStage, Applicant[]> = {
-      REVIEW: [], INTERVIEW: [], OFFER: [], HIRED: [], REJECTED: [],
+      review: [], interview: [], offer: [], hired: [], rejected: [],
     };
     
     localApplicants.forEach(app => {
-      // Defensive stage matching (handle case sensitivity)
-      const stage = (app.current_stage || 'REVIEW').toUpperCase() as ApplicationStage;
+      const stage = (app.current_stage || 'review') as ApplicationStage;
       if (cols[stage]) {
         cols[stage].push(app);
       } else {
-        // Fallback to REVIEW if stage is unknown
-        cols['REVIEW'].push(app);
+        cols['review'].push(app);
       }
     });
     return cols;
@@ -243,12 +242,12 @@ export default function KanbanBoard({ applicants, onStageChange }: KanbanBoardPr
   );
 }
 
-import { useDroppable } from '@dnd-kit/core';
+
 
 function KanbanColumn({ stage, tasks, onReview, selectedIds, onToggleSelect, onToggleSelectAll }: { stage: ApplicationStage, tasks: Applicant[], onReview: (app: Applicant) => void, selectedIds: Set<string>, onToggleSelect: (id: string) => void, onToggleSelectAll: (stage: ApplicationStage) => void }) {
   const { setNodeRef } = useDroppable({ id: stage, data: { type: 'Column', stage } });
-  const stageTitles: Record<ApplicationStage, string> = { REVIEW: 'Review', INTERVIEW: 'Interview', OFFER: 'Offer', HIRED: 'Hired', REJECTED: 'Rejected' };
-  const stageColors: Record<ApplicationStage, string> = { REVIEW: 'var(--primary)', INTERVIEW: 'var(--info)', OFFER: 'var(--warning)', HIRED: 'var(--success)', REJECTED: 'var(--error)' };
+  const stageTitles: Record<ApplicationStage, string> = { review: 'Review', interview: 'Interview', offer: 'Offer', hired: 'Hired', rejected: 'Rejected' };
+  const stageColors: Record<ApplicationStage, string> = { review: 'var(--primary)', interview: 'var(--info)', offer: 'var(--warning)', hired: 'var(--success)', rejected: 'var(--error)' };
   const allSelected = tasks.length > 0 && tasks.every(t => selectedIds.has(t.id));
 
   return (
